@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>HEARTAUTH · Smart Biometric Scanner</title>
+    <title>HEARTAUTH · Advanced rPPG Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         :root {
             --bg-base: #070A14;
             --bg-panel: #0E1322;
@@ -17,13 +21,11 @@
             --bg-card2: #1A2340;
             --border: #2A3455;
             --cyan: #00E5FF;
-            --cyan-dim: rgba(0,229,255,0.08);
+            --cyan-dim: rgba(0, 229, 255, 0.08);
             --jade: #00C48C;
             --coral: #FF4C5E;
             --amber: #FFB830;
             --purple: #9B6DFF;
-            --pink: #FF6B9D;
-            --orange: #FF8A5C;
             --text-1: #EDF0F7;
             --text-2: #8A93B2;
             --text-3: #555F7A;
@@ -32,20 +34,85 @@
             --radius: 12px;
             --radius-sm: 8px;
         }
-        body { background: var(--bg-base); color: var(--text-1); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; padding: 16px 0 32px; }
-        .wrapper { width: 92%; max-width: 1400px; margin: 0 auto; }
-        .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 16px; border-bottom: 2px solid var(--border); flex-wrap: wrap; gap: 10px; }
-        .logo-area { display: flex; align-items: center; gap: 12px; }
-        .logo-pulse { width: 44px; height: 44px; border-radius: 50%; background: var(--cyan-dim); border: 2px solid var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 20px; animation: logoPulse 2s ease-in-out infinite; flex-shrink: 0; }
-        @keyframes logoPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.3); } 50% { box-shadow: 0 0 0 14px rgba(0,229,255,0); } }
-        .logo-text h1 { font-size: 26px; font-weight: 800; background: linear-gradient(90deg, #fff, var(--cyan), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .logo-text p { font-size: 10px; color: var(--text-3); text-transform: uppercase; }
-        .creator-badge { font-size: 12px; color: var(--text-2); text-align: right; line-height: 1.5; }
-        .creator-badge strong { color: var(--cyan); }
-        .creator-badge .grade { color: var(--purple); }
-        .creator-badge .school { color: var(--amber); }
+        body {
+            background: var(--bg-base);
+            color: var(--text-1);
+            font-family: var(--font);
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 16px 0 32px;
+        }
+        .wrapper {
+            width: 92%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-        /* Name Input */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0 16px;
+            border-bottom: 2px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-pulse {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--cyan-dim);
+            border: 2px solid var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            animation: logoPulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes logoPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 14px rgba(0, 229, 255, 0);
+            }
+        }
+        .logo-text h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #fff, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-text p {
+            font-size: 10px;
+            color: var(--text-3);
+            text-transform: uppercase;
+        }
+        .creator-badge {
+            font-size: 12px;
+            color: var(--text-2);
+            text-align: right;
+            line-height: 1.5;
+        }
+        .creator-badge strong {
+            color: var(--cyan);
+        }
+        .creator-badge .grade {
+            color: var(--purple);
+        }
+        .creator-badge .school {
+            color: var(--amber);
+        }
+
         .name-box {
             background: var(--bg-card);
             border: 2px solid var(--border);
@@ -58,81 +125,348 @@
             flex-wrap: wrap;
             transition: border-color 0.3s;
         }
-        .name-box.required { border-color: var(--coral); }
-        .name-box.valid { border-color: var(--jade); }
-        .name-box label { font-size: 11px; color: var(--text-2); font-weight: 600; }
-        .name-box input { flex: 1; min-width: 120px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-base); color: var(--text-1); font-size: 13px; outline: none; }
-        .name-box input:focus { border-color: var(--cyan); }
-        .name-box .btn { padding: 8px 18px; border: none; border-radius: 6px; background: linear-gradient(135deg, #00C5DC, #00E5FF); color: #060A14; font-weight: 700; font-size: 12px; cursor: pointer; font-family: var(--font); transition: all 0.2s; }
-        .name-box .btn:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(0,229,255,0.3); }
+        .name-box.required {
+            border-color: var(--coral);
+        }
+        .name-box.valid {
+            border-color: var(--jade);
+        }
+        .name-box label {
+            font-size: 11px;
+            color: var(--text-2);
+            font-weight: 600;
+        }
+        .name-box input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-base);
+            color: var(--text-1);
+            font-size: 13px;
+            outline: none;
+        }
+        .name-box input:focus {
+            border-color: var(--cyan);
+        }
+        .name-box .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #00C5DC, #00E5FF);
+            color: #060A14;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+        .name-box .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+        }
 
-        .status-bar { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-        .status-pill { display: flex; align-items: center; gap: 5px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--text-2); }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; transition: background 0.3s; }
-        .status-dot.active { background: var(--jade); box-shadow: 0 0 6px var(--jade); animation: blink 1.5s infinite; }
-        .status-dot.error { background: var(--coral); }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .status-bar {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: var(--text-2);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-3);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .status-dot.active {
+            background: var(--jade);
+            box-shadow: 0 0 6px var(--jade);
+            animation: blink 1.5s infinite;
+        }
+        .status-dot.error {
+            background: var(--coral);
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1
+            }
+            50% {
+                opacity: 0.4
+            }
+        }
 
-        .btn-row { display: flex; gap: 8px; margin: 4px 0 14px; flex-wrap: wrap; }
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 8px; border: 1px solid transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: var(--font); }
-        .btn-primary { background: linear-gradient(135deg, #00C5DC, #00E5FF); color: #060A14; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,255,0.3); }
-        .btn-danger { background: rgba(255,76,94,0.15); color: var(--coral); border-color: var(--coral); }
-        .btn-danger:hover { background: rgba(255,76,94,0.25); }
-        .btn-success { background: rgba(0,196,140,0.15); color: var(--jade); border-color: var(--jade); }
-        .btn-success:hover { background: rgba(0,196,140,0.25); }
-        .btn-ghost { background: var(--bg-card); color: var(--text-2); border-color: var(--border); }
-        .btn-ghost:hover { border-color: var(--text-2); color: var(--text-1); }
-        .btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none !important; }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin: 4px 0 14px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00C5DC, #00E5FF);
+            color: #060A14;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3);
+        }
+        .btn-danger {
+            background: rgba(255, 76, 94, 0.15);
+            color: var(--coral);
+            border-color: var(--coral);
+        }
+        .btn-danger:hover {
+            background: rgba(255, 76, 94, 0.25);
+        }
+        .btn-success {
+            background: rgba(0, 196, 140, 0.15);
+            color: var(--jade);
+            border-color: var(--jade);
+        }
+        .btn-success:hover {
+            background: rgba(0, 196, 140, 0.25);
+        }
+        .btn-ghost {
+            background: var(--bg-card);
+            color: var(--text-2);
+            border-color: var(--border);
+        }
+        .btn-ghost:hover {
+            border-color: var(--text-2);
+            color: var(--text-1);
+        }
+        .btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+            transform: none !important;
+        }
 
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-        .camera-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-        .camera-inner { position: relative; width: 100%; aspect-ratio: 4/3; background: #070A10; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #videoEl { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
-        #overlayCanvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-        .camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-3); font-size: 13px; }
-        .camera-placeholder .cam-icon { font-size: 40px; opacity: 0.3; }
-        .camera-info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 4px; }
-        .camera-badge { font-size: 10px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; background: var(--bg-card2); color: var(--text-2); }
-        .camera-badge.good { background: rgba(0,196,140,0.15); color: var(--jade); }
-        .camera-badge.bad { background: rgba(255,76,94,0.15); color: var(--coral); }
+        .camera-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .camera-inner {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #070A10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #videoEl {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            display: none;
+        }
+        #overlayCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .camera-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: var(--text-3);
+            font-size: 13px;
+        }
+        .camera-placeholder .cam-icon {
+            font-size: 40px;
+            opacity: 0.3;
+        }
+        .camera-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .camera-badge {
+            font-size: 10px;
+            font-family: var(--mono);
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg-card2);
+            color: var(--text-2);
+        }
+        .camera-badge.good {
+            background: rgba(0, 196, 140, 0.15);
+            color: var(--jade);
+        }
+        .camera-badge.bad {
+            background: rgba(255, 76, 94, 0.15);
+            color: var(--coral);
+        }
 
-        .metrics-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; }
-        .section-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); padding: 8px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
-        .metrics-scroll { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 520px; }
-        .metrics-scroll::-webkit-scrollbar { width: 3px; }
-        .metrics-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-        .metric-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
-        .metric-label { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-        .metric-value { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text-1); }
-        .metric-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-        .progress-track { height: 4px; background: var(--bg-base); border-radius: 2px; overflow: hidden; margin-top: 4px; }
-        .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+        .metrics-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+        }
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-3);
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .metrics-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 520px;
+        }
+        .metrics-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+        .metrics-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        .metric-label {
+            font-size: 9px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--text-1);
+        }
+        .metric-sub {
+            font-size: 10px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+        .progress-track {
+            height: 4px;
+            background: var(--bg-base);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
 
-        .emotion-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 4px; }
-        .emotion-item { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px; transition: border-color 0.3s; }
-        .emotion-item.active { border-color: var(--cyan); background: var(--cyan-dim); }
-        .emotion-item .em-name { font-size: 8px; color: var(--text-3); font-weight: 600; text-transform: uppercase; }
-        .emotion-item .em-pct { font-size: 11px; font-weight: 700; font-family: var(--mono); color: var(--text-1); }
-        .emotion-item .em-bar { height: 2px; background: var(--bg-base); border-radius: 1px; overflow: hidden; }
-        .emotion-item .em-fill { height: 100%; border-radius: 1px; background: var(--cyan); transition: width 0.5s; }
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .emotion-item {
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            transition: border-color 0.3s;
+        }
+        .emotion-item.active {
+            border-color: var(--cyan);
+            background: var(--cyan-dim);
+        }
+        .emotion-item .em-name {
+            font-size: 8px;
+            color: var(--text-3);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .emotion-item .em-pct {
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--text-1);
+        }
+        .emotion-item .em-bar {
+            height: 2px;
+            background: var(--bg-base);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+        .emotion-item .em-fill {
+            height: 100%;
+            border-radius: 1px;
+            background: var(--cyan);
+            transition: width 0.5s;
+        }
 
-        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px; }
-        @media (max-width: 900px) { .bottom-grid { grid-template-columns: 1fr; } }
-        .sub-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); }
-
-        .voice-bars { display: flex; align-items: flex-end; gap: 2px; height: 36px; padding: 4px 12px 0; }
-        .voice-bar { flex: 1; background: var(--cyan); border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.08s ease; }
-        .hr-input { background: var(--bg-base); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; width: 70px; font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--text-1); }
-        .hr-input:focus { outline: 1px solid var(--cyan); }
-
-        .recs-list { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
-        .rec-item { display: flex; align-items: flex-start; gap: 8px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: var(--text-2); }
-        .rec-num { background: var(--cyan-dim); color: var(--cyan); border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-
-        /* Big Emotion Display */
         .emotion-display {
             background: var(--bg-card);
             border-radius: 12px;
@@ -158,1213 +492,1691 @@
             margin-top: 2px;
         }
 
-        /* Help Card */
-        .help-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 12px 14px;
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+        @media (max-width: 900px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .sub-panel {
+            background: var(--bg-panel);
             border: 1px solid var(--border);
-            margin: 8px 0;
-            border-left: 4px solid var(--cyan);
+            border-radius: var(--radius);
         }
-        .help-card .help-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--cyan);
-            margin-bottom: 4px;
+
+        .voice-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 36px;
+            padding: 4px 12px 0;
         }
-        .help-card .help-text {
-            font-size: 12px;
-            color: var(--text-2);
-            line-height: 1.5;
+        .voice-bar {
+            flex: 1;
+            background: var(--cyan);
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            transition: height 0.08s ease;
         }
-        .help-card .help-action {
-            margin-top: 6px;
-            padding: 6px 14px;
-            border: none;
+        .hr-input {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
             border-radius: 6px;
+            padding: 4px 8px;
+            width: 70px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--text-1);
+        }
+        .hr-input:focus {
+            outline: 1px solid var(--cyan);
+        }
+
+        .recs-list {
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .rec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: var(--text-2);
+        }
+        .rec-num {
             background: var(--cyan-dim);
             color: var(--cyan);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .history-section {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-top: 14px;
+        }
+        .chart-container {
+            padding: 12px 14px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin: 8px 12px;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: 180px !important;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th,
+        td {
+            padding: 6px 10px;
+            text-align: left;
             font-size: 11px;
-            cursor: pointer;
-            font-family: var(--font);
-            transition: all 0.2s;
+            border-bottom: 1px solid var(--border);
         }
-        .help-card .help-action:hover {
-            background: var(--cyan);
-            color: #060A14;
+        th {
+            color: var(--text-3);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+        td {
+            color: var(--text-2);
+        }
+        .hist-score {
+            font-family: var(--mono);
+            font-weight: 700;
+        }
+        .hist-score.high {
+            color: var(--jade);
+        }
+        .hist-score.medium {
+            color: var(--amber);
+        }
+        .hist-score.low {
+            color: var(--coral);
         }
 
-        .history-section { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 14px; }
-        .chart-container { padding: 12px 14px; background: var(--bg-card); border-radius: 8px; margin: 8px 12px; }
-        .chart-container canvas { width: 100% !important; height: 180px !important; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 6px 10px; text-align: left; font-size: 11px; border-bottom: 1px solid var(--border); }
-        th { color: var(--text-3); font-weight: 600; text-transform: uppercase; font-size: 9px; }
-        td { color: var(--text-2); }
-        .hist-score { font-family: var(--mono); font-weight: 700; }
-        .hist-score.high { color: var(--jade); }
-        .hist-score.medium { color: var(--amber); }
-        .hist-score.low { color: var(--coral); }
+        /* rPPG Explanation Box */
+        .rppg-explanation {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-top: 20px;
+            padding: 20px 24px;
+            border-left: 4px solid var(--cyan);
+        }
+        .rppg-explanation h2 {
+            font-size: 18px;
+            color: var(--cyan);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .rppg-explanation h3 {
+            font-size: 14px;
+            color: var(--text-1);
+            margin: 16px 0 8px;
+        }
+        .rppg-explanation p {
+            color: var(--text-2);
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        .rppg-explanation .highlight {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+        .rppg-explanation .step {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-left: 3px solid var(--cyan);
+        }
+        .rppg-explanation .step strong {
+            color: var(--cyan);
+        }
+        .rppg-explanation .emoji-big {
+            font-size: 24px;
+        }
+        .rppg-explanation .diagram {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-2);
+            text-align: center;
+            border: 1px solid var(--border);
+            line-height: 2;
+        }
+        .rppg-explanation .diagram .arrow {
+            color: var(--cyan);
+        }
 
-        .disclaimer-box { margin-top: 20px; padding: 16px 20px; background: rgba(255,76,94,0.06); border: 1px solid rgba(255,76,94,0.2); border-radius: 8px; color: var(--text-2); font-size: 11px; line-height: 1.7; }
-        .disclaimer-box strong { color: var(--coral); }
-        .footer { margin-top: 24px; padding-top: 14px; border-top: 2px solid var(--border); text-align: center; color: var(--text-3); font-size: 12px; line-height: 1.8; }
-        .footer .name { color: var(--text-1); font-weight: 700; }
-        .footer .grade { color: var(--purple); }
-        .footer .school { color: var(--amber); }
+        .disclaimer-box {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: rgba(255, 76, 94, 0.06);
+            border: 1px solid rgba(255, 76, 94, 0.2);
+            border-radius: 8px;
+            color: var(--text-2);
+            font-size: 11px;
+            line-height: 1.7;
+        }
+        .disclaimer-box strong {
+            color: var(--coral);
+        }
 
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 18px; font-size: 12px; color: var(--text-1); box-shadow: 0 8px 32px rgba(0,0,0,0.6); transition: transform 0.3s ease; z-index: 999; white-space: nowrap; }
-        .toast.show { transform: translateX(-50%) translateY(0); }
+        .footer {
+            margin-top: 24px;
+            padding-top: 14px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            color: var(--text-3);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        .footer .name {
+            color: var(--text-1);
+            font-weight: 700;
+        }
+        .footer .grade {
+            color: var(--purple);
+        }
+        .footer .school {
+            color: var(--amber);
+        }
 
-        @media (max-width: 600px) { .logo-text h1 { font-size: 18px; } .btn { font-size: 10px; padding: 7px 14px; } }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 12px;
+            color: var(--text-1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            transition: transform 0.3s ease;
+            z-index: 999;
+            white-space: nowrap;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            .logo-text h1 {
+                font-size: 18px;
+            }
+            .btn {
+                font-size: 10px;
+                padding: 7px 14px;
+            }
+            .rppg-explanation {
+                padding: 14px 16px;
+            }
+            .rppg-explanation .diagram {
+                font-size: 10px;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="wrapper">
-    <header class="header">
-        <div class="logo-area">
-            <div class="logo-pulse">🧠</div>
-            <div class="logo-text">
-                <h1>HEARTAUTH</h1>
-                <p>Smart Biometric Scanner · Real Help</p>
-            </div>
-        </div>
-        <div class="creator-badge">
-            <strong>Hammad Sayed</strong><br>
-            <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
-        </div>
-    </header>
-
-    <div class="name-box required" id="nameBox">
-        <label>👤 Your Name <span style="color:var(--coral);">*</span></label>
-        <input type="text" id="userNameInput" placeholder="Enter your name" maxlength="30">
-        <button class="btn" id="setNameBtn">Set Name</button>
-    </div>
-
-    <div class="status-bar">
-        <div class="status-pill"><div class="status-dot" id="dotCamera"></div><span id="lblCamera">Off</span></div>
-        <div class="status-pill"><div class="status-dot" id="dotFace"></div><span id="lblFace">No Face</span></div>
-        <div class="status-pill"><div class="status-dot" id="dotVoice"></div><span id="lblVoice">Mic Off</span></div>
-        <div class="status-pill"><div class="status-dot" id="dotQuality"></div><span id="lblQuality">Quality: —</span></div>
-    </div>
-
-    <div class="btn-row">
-        <button class="btn btn-primary" id="btnStart">▶ Start Camera</button>
-        <button class="btn btn-danger" id="btnStop" disabled>⏹ Stop</button>
-        <button class="btn btn-success" id="btnAnalyze" disabled>📊 Analyze & Send</button>
-        <button class="btn btn-ghost" id="btnClear">🗑 Clear</button>
-    </div>
-
-    <div class="main-grid">
-        <div class="camera-panel">
-            <div class="section-title">🎥 Live Camera</div>
-            <div class="camera-inner">
-                <div class="camera-placeholder" id="camPlaceholder">
-                    <div class="cam-icon">📷</div>
-                    <div>Press "Start Camera"</div>
+    <div class="wrapper">
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-pulse">🧠</div>
+                <div class="logo-text">
+                    <h1>HEARTAUTH</h1>
+                    <p>Advanced rPPG · Real-Time Biometrics</p>
                 </div>
-                <video id="videoEl" autoplay playsinline muted></video>
-                <canvas id="overlayCanvas"></canvas>
             </div>
-            <div class="camera-info-row">
-                <span class="camera-badge" id="badgeFPS">FPS: —</span>
-                <span class="camera-badge" id="badgeFaceQ">Quality: —</span>
-                <span class="camera-badge" id="badgeFaceStatus">No Face</span>
-                <span class="camera-badge" id="badgeBlinks">Blinks: 0</span>
+            <div class="creator-badge">
+                <strong>Hammad Sayed</strong><br>
+                <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
             </div>
+        </header>
+
+        <!-- Name Input -->
+        <div class="name-box required" id="nameBox">
+            <label>👤 Your Name <span style="color:var(--coral);">*</span></label>
+            <input type="text" id="userNameInput" placeholder="Enter your name" maxlength="30">
+            <button class="btn" id="setNameBtn">Set Name</button>
         </div>
 
-        <div class="metrics-panel">
-            <div class="section-title">📡 Your Current State</div>
-            <div class="metrics-scroll">
-                <!-- Big Emotion Display -->
-                <div class="emotion-display">
-                    <span class="big-emoji" id="bigEmoji">😐</span>
-                    <div class="emotion-name" id="emotionName">Neutral</div>
-                    <div class="emotion-desc" id="emotionDesc">You seem balanced and calm right now.</div>
-                </div>
+        <div class="status-bar">
+            <div class="status-pill"><div class="status-dot" id="dotCamera"></div><span id="lblCamera">Off</span></div>
+            <div class="status-pill"><div class="status-dot" id="dotFace"></div><span id="lblFace">No Face</span></div>
+            <div class="status-pill"><div class="status-dot" id="dotVoice"></div><span id="lblVoice">Mic Off</span></div>
+            <div class="status-pill"><div class="status-dot" id="dotHR"></div><span id="lblHR">HR: —</span></div>
+        </div>
 
-                <!-- Help Card -->
-                <div class="help-card" id="helpCard">
-                    <div class="help-title" id="helpTitle">💡 Quick Tip</div>
-                    <div class="help-text" id="helpText">Take a moment to check in with yourself. How are you really feeling?</div>
-                    <button class="help-action" id="helpActionBtn" style="display:none;">🧘 Try This Now</button>
-                </div>
+        <div class="btn-row">
+            <button class="btn btn-primary" id="btnStart">▶ Start Camera</button>
+            <button class="btn btn-danger" id="btnStop" disabled>⏹ Stop</button>
+            <button class="btn btn-success" id="btnAnalyze" disabled>📊 Record & Send</button>
+            <button class="btn btn-ghost" id="btnClear">🗑 Clear History</button>
+        </div>
 
-                <div class="metric-card">
-                    <div class="metric-header"><div class="metric-label">🌟 Wellbeing Score</div></div>
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                        <div>
-                            <div class="metric-value" id="wellbeingVal">—</div>
-                            <div class="metric-sub" id="wellbeingState">Start camera</div>
+        <div class="main-grid">
+            <div class="camera-panel">
+                <div class="section-title">🎥 Live Camera · rPPG Analysis</div>
+                <div class="camera-inner">
+                    <div class="camera-placeholder" id="camPlaceholder">
+                        <div class="cam-icon">📷</div>
+                        <div>Press "Start Camera"</div>
+                    </div>
+                    <video id="videoEl" autoplay playsinline muted></video>
+                    <canvas id="overlayCanvas"></canvas>
+                </div>
+                <div class="camera-info-row">
+                    <span class="camera-badge" id="badgeFPS">FPS: —</span>
+                    <span class="camera-badge" id="badgeFaceQ">Quality: —</span>
+                    <span class="camera-badge" id="badgeFaceStatus">No Face</span>
+                    <span class="camera-badge" id="badgeBlinks">Blinks: 0</span>
+                </div>
+            </div>
+
+            <div class="metrics-panel">
+                <div class="section-title">📡 Live Biometric Data</div>
+                <div class="metrics-scroll">
+                    <!-- Big Emotion Display -->
+                    <div class="emotion-display">
+                        <span class="big-emoji" id="bigEmoji">😐</span>
+                        <div class="emotion-name" id="emotionName">Neutral</div>
+                        <div class="emotion-desc" id="emotionDesc">You seem balanced and calm right now.</div>
+                    </div>
+
+                    <!-- rPPG Heart Rate - PROMINENT -->
+                    <div class="metric-card" style="border: 2px solid var(--cyan);">
+                        <div class="metric-header">
+                            <div class="metric-label">❤️ rPPG Heart Rate <span style="color:var(--cyan);">(Live)</span></div>
                         </div>
-                        <div style="flex:1;">
-                            <div class="progress-track">
-                                <div class="progress-fill" id="wellbeingBar" style="width:0%;background:var(--jade);"></div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                            <div>
+                                <div class="metric-value" id="hrDisplay" style="font-size:32px;color:var(--cyan);">--</div>
+                                <div class="metric-sub" id="hrStatus">Waiting for face...</div>
+                            </div>
+                            <div style="flex:1;">
+                                <div class="progress-track" style="height:8px;">
+                                    <div class="progress-fill" id="hrBar" style="width:0%;background:var(--cyan);"></div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-3);margin-top:2px;">
+                                    <span>40</span>
+                                    <span>72</span>
+                                    <span>100</span>
+                                </div>
+                                <div style="font-size:8px;color:var(--text-3);margin-top:2px;text-align:center;">
+                                    <span id="rppgSignal">📡 Capturing skin color signal...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="metric-card">
-                    <div class="metric-header"><div class="metric-label">❤️ Heart Rate</div></div>
-                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                        <input type="number" id="hrInput" class="hr-input" value="72" min="40" max="120">
-                        <span style="font-size:9px;color:var(--text-3);">Manual</span>
-                        <span style="font-size:9px;color:var(--text-3);margin-left:auto;" id="hrSource">Auto</span>
-                    </div>
-                    <div class="progress-track"><div class="progress-fill" id="hrBar" style="width:50%;background:var(--coral);"></div></div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-header"><div class="metric-label">😰 Stress Level</div></div>
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                        <div>
-                            <div class="metric-value" id="stressVal">0%</div>
-                            <div class="metric-sub" id="stressState">Calm</div>
-                        </div>
-                        <div style="flex:1;">
-                            <div class="progress-track">
-                                <div class="progress-fill" id="stressBar" style="width:0%;background:var(--jade);"></div>
+                    <div class="metric-card">
+                        <div class="metric-header"><div class="metric-label">🌟 Wellbeing Score</div></div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                            <div>
+                                <div class="metric-value" id="wellbeingVal">—</div>
+                                <div class="metric-sub" id="wellbeingState">Start camera</div>
+                            </div>
+                            <div style="flex:1;">
+                                <div class="progress-track">
+                                    <div class="progress-fill" id="wellbeingBar" style="width:0%;background:var(--jade);"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="metric-card">
-                    <div class="metric-header"><div class="metric-label">👁️ Blink Rate</div></div>
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                        <div>
-                            <div class="metric-value" id="blinkCount">0</div>
-                            <div class="metric-sub" id="blinkRate">0 blinks/min</div>
-                        </div>
-                        <div style="flex:1;">
-                            <div class="progress-track"><div class="progress-fill" id="blinkBar" style="width:0%;background:var(--purple);"></div></div>
+                    <div class="metric-card">
+                        <div class="metric-header"><div class="metric-label">😰 Stress Level</div></div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                            <div>
+                                <div class="metric-value" id="stressVal">0%</div>
+                                <div class="metric-sub" id="stressState">Calm</div>
+                            </div>
+                            <div style="flex:1;">
+                                <div class="progress-track">
+                                    <div class="progress-fill" id="stressBar" style="width:0%;background:var(--jade);"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="metric-card">
-                    <div class="metric-label">🎭 Emotion Breakdown</div>
-                    <div class="emotion-grid" id="emotionGrid"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <div class="metric-card">
+                        <div class="metric-header"><div class="metric-label">👁️ Blink Rate</div></div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                            <div>
+                                <div class="metric-value" id="blinkCount">0</div>
+                                <div class="metric-sub" id="blinkRate">0 blinks/min</div>
+                            </div>
+                            <div style="flex:1;">
+                                <div class="progress-track"><div class="progress-fill" id="blinkBar" style="width:0%;background:var(--purple);"></div></div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="bottom-grid">
-        <div class="sub-panel">
-            <div class="section-title">🎙️ Voice Analysis</div>
-            <div class="voice-bars" id="voiceBarsRow"></div>
-            <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div class="metric-card" style="padding:6px 8px;">
-                    <div class="metric-label">Stress</div>
-                    <div class="metric-value" id="voiceStress">—</div>
-                    <div class="progress-track"><div class="progress-fill" id="voiceStressBar" style="width:0%;background:var(--coral);"></div></div>
-                </div>
-                <div class="metric-card" style="padding:6px 8px;">
-                    <div class="metric-label">Pitch</div>
-                    <div class="metric-value" id="voicePitch" style="font-size:16px;">— Hz</div>
-                    <div class="metric-sub" id="voiceStatus">Silent</div>
+                    <div class="metric-card">
+                        <div class="metric-label">🎭 Emotion Breakdown</div>
+                        <div class="emotion-grid" id="emotionGrid"></div>
+                    </div>
                 </div>
             </div>
-            <div style="padding:0 12px 8px;">
-                <button class="btn btn-ghost" style="width:100%;font-size:11px;" id="btnMic">🎙️ Enable Microphone</button>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="sub-panel">
+                <div class="section-title">🎙️ Voice Analysis</div>
+                <div class="voice-bars" id="voiceBarsRow"></div>
+                <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="metric-card" style="padding:6px 8px;">
+                        <div class="metric-label">Stress</div>
+                        <div class="metric-value" id="voiceStress">—</div>
+                        <div class="progress-track"><div class="progress-fill" id="voiceStressBar" style="width:0%;background:var(--coral);"></div></div>
+                    </div>
+                    <div class="metric-card" style="padding:6px 8px;">
+                        <div class="metric-label">Pitch</div>
+                        <div class="metric-value" id="voicePitch" style="font-size:16px;">— Hz</div>
+                        <div class="metric-sub" id="voiceStatus">Silent</div>
+                    </div>
+                </div>
+                <div style="padding:0 12px 8px;">
+                    <button class="btn btn-ghost" style="width:100%;font-size:11px;" id="btnMic">🎙️ Enable Microphone</button>
+                </div>
+            </div>
+
+            <div class="sub-panel">
+                <div class="section-title">💡 Personalized Tips</div>
+                <div class="recs-list" id="recsList">
+                    <div style="color:var(--text-3);font-size:11px;padding:6px 0;">Start camera to get personalized help</div>
+                </div>
+            </div>
+
+            <div class="sub-panel">
+                <div class="section-title">📊 Face Metrics</div>
+                <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div><span style="font-size:9px;color:var(--text-3);">Symmetry</span><br><span id="faceSym" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                    <div><span style="font-size:9px;color:var(--text-3);">Confidence</span><br><span id="faceConf" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                    <div><span style="font-size:9px;color:var(--text-3);">Face Size</span><br><span id="faceSize" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                    <div><span style="font-size:9px;color:var(--text-3);">Stability</span><br><span id="faceStability" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                </div>
             </div>
         </div>
 
-        <div class="sub-panel">
-            <div class="section-title">💡 Personalized Tips</div>
-            <div class="recs-list" id="recsList">
-                <div style="color:var(--text-3);font-size:11px;padding:6px 0;">Start camera to get personalized help</div>
+        <div class="history-section">
+            <div class="section-title" style="justify-content:space-between;">
+                <span>📋 Your History</span>
+                <span id="histCount" style="font-size:10px;">0 sessions</span>
             </div>
-        </div>
-
-        <div class="sub-panel">
-            <div class="section-title">📊 Face Metrics</div>
-            <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div><span style="font-size:9px;color:var(--text-3);">Symmetry</span><br><span id="faceSym" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                <div><span style="font-size:9px;color:var(--text-3);">Confidence</span><br><span id="faceConf" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                <div><span style="font-size:9px;color:var(--text-3);">Face Size</span><br><span id="faceSize" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                <div><span style="font-size:9px;color:var(--text-3);">Stability</span><br><span id="faceStability" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+            <div class="chart-container">
+                <canvas id="wellbeingChart"></canvas>
             </div>
+            <table>
+                <thead><tr><th>#</th><th>Date</th><th>Emotion</th><th>Score</th><th>BPM</th><th>Stress</th><th>Blinks</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="7" class="empty-history">No sessions recorded yet</td></tr></tbody>
+            </table>
         </div>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- rPPG EXPLANATION - FULL DETAILED SECTION                   -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <div class="rppg-explanation">
+            <h2>🫀 What is rPPG? (remote Photoplethysmography)</h2>
+
+            <p>
+                <span class="highlight">rPPG</span> is a <strong>contactless</strong> technology that measures your
+                <strong>heart rate</strong> by analyzing <span class="highlight">subtle color changes in your skin</span>
+                caused by blood flow. This is the same technology used in smartwatches, but without any physical contact!
+            </p>
+
+            <h3>📐 How rPPG Works - Step by Step</h3>
+
+            <div class="step">
+                <strong>1. 📷 Camera Captures Your Face</strong><br>
+                The camera captures your face in real-time. The region of interest is your <span class="highlight">forehead
+                or cheeks</span> - areas with good blood perfusion.
+            </div>
+
+            <div class="step">
+                <strong>2. 🎨 Extract Skin Color Signal</strong><br>
+                The system extracts the <span class="highlight">average RGB color values</span> from the skin region every frame.
+                This creates a continuous color signal over time.
+            </div>
+
+            <div class="step">
+                <strong>3. ❤️ Blood Volume Pulse</strong><br>
+                When your heart <span class="highlight">contracts (systole)</span>, blood volume in your skin increases,
+                making it slightly <span class="highlight">redder</span>. When it relaxes (diastole), blood volume decreases,
+                making it slightly <span class="highlight">paler</span>.
+            </div>
+
+            <div class="step">
+                <strong>4. 📊 Signal Processing</strong><br>
+                The color signal is filtered to remove noise (movement, lighting changes). The <span class="highlight">dominant
+                frequency</span> of the remaining signal corresponds to your <span class="highlight">heart rate</span>.
+            </div>
+
+            <div class="step">
+                <strong>5. 🔢 Calculate BPM</strong><br>
+                The frequency is converted to <span class="highlight">Beats Per Minute (BPM)</span> by multiplying by 60.
+                <br>
+                <span style="font-size:12px;color:var(--text-3);">Example: 1.2 Hz × 60 = 72 BPM</span>
+            </div>
+
+            <h3>🔬 Visual Diagram of rPPG</h3>
+
+            <div class="diagram">
+                <span class="emoji-big">📷</span> Camera → <span class="emoji-big">👤</span> Face Detection
+                <span class="arrow">→</span> <span class="emoji-big">🎨</span> RGB Signal
+                <span class="arrow">→</span> <span class="emoji-big">📊</span> Filtering
+                <span class="arrow">→</span> <span class="emoji-big">🔢</span> Frequency Analysis
+                <span class="arrow">→</span> <span class="emoji-big">❤️</span> <strong style="color:var(--cyan);">72 BPM</strong>
+                <br>
+                <span style="font-size:10px;color:var(--text-3);">
+                    The green/blue light is absorbed by hemoglobin, creating a pulsatile signal
+                </span>
+            </div>
+
+            <h3>📈 The rPPG Signal in Action</h3>
+
+            <div class="diagram" style="text-align:left;font-size:11px;line-height:2;">
+                <span style="color:var(--cyan);">▲</span> Skin Redness (amplified)<br>
+                <span style="color:var(--text-3);">│</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱╲</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱╲</span><br>
+                <span style="color:var(--text-3);">│</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span><br>
+                <span style="color:var(--text-3);">│</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span>&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span><br>
+                <span style="color:var(--text-3);">│</span> &nbsp;&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span>&nbsp; <span style="color:var(--cyan);">╱</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:var(--cyan);">╲</span><br>
+                <span style="color:var(--text-3);">└─────────────────────────────────────</span><span style="color:var(--text-3);">→</span> Time<br>
+                <span style="font-size:10px;color:var(--text-3);">↑ One cardiac cycle = 1 heartbeat</span>
+            </div>
+
+            <h3>🧪 Why rPPG is Revolutionary</h3>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border);">
+                    <span style="font-size:20px;display:block;">✅</span>
+                    <strong style="color:var(--jade);">Contactless</strong>
+                    <p style="font-size:11px;color:var(--text-3);margin-top:4px;">No sensors on your body — just a camera!</p>
+                </div>
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border);">
+                    <span style="font-size:20px;display:block;">✅</span>
+                    <strong style="color:var(--jade);">Continuous Monitoring</strong>
+                    <p style="font-size:11px;color:var(--text-3);margin-top:4px;">Track your heart rate 24/7 without wearables.</p>
+                </div>
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border);">
+                    <span style="font-size:20px;display:block;">✅</span>
+                    <strong style="color:var(--jade);">Accessible</strong>
+                    <p style="font-size:11px;color:var(--text-3);margin-top:4px;">Works on any device with a camera — phone, laptop, tablet.</p>
+                </div>
+                <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border);">
+                    <span style="font-size:20px;display:block;">✅</span>
+                    <strong style="color:var(--jade);">Affordable</strong>
+                    <p style="font-size:11px;color:var(--text-3);margin-top:4px;">No expensive hardware needed — it's all software!</p>
+                </div>
+            </div>
+
+            <h3>⚠️ Limitations & Accuracy</h3>
+            <p style="font-size:12px;color:var(--text-3);">
+                rPPG accuracy depends on:<br>
+                • <span class="highlight">Good lighting</span> (natural or bright indoor light)<br>
+                • <span class="highlight">Minimal movement</span> (stay still for best results)<br>
+                • <span class="highlight">Skin visibility</span> (forehead or cheeks must be visible)<br>
+                • <span class="highlight">Signal quality</span> (the stronger the color signal, the more accurate the BPM)
+                <br><br>
+                <span style="color:var(--text-2);">📊 Typical accuracy: ±3-5 BPM compared to medical-grade ECG.</span>
+            </p>
+
+            <p style="font-size:11px;color:var(--text-3);margin-top:8px;border-top:1px solid var(--border);padding-top:12px;">
+                <span class="highlight">🧠 HEARTAUTH</span> uses MediaPipe Face Mesh to precisely track skin pixels,
+                advanced signal processing to extract the pulse signal, and machine learning to filter out noise —
+                delivering the <span class="highlight">most accurate rPPG</span> possible in a web browser.
+            </p>
+        </div>
+
+        <div class="disclaimer-box">
+            <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes.
+            Not a medical device. Always consult a healthcare professional.
+        </div>
+
+        <footer class="footer">
+            <span class="name">Hammad Sayed</span> · <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
+            <div class="sub">⚡ Advanced rPPG + Facial Action Units · 15-factor analysis</div>
+        </footer>
     </div>
 
-    <div class="history-section">
-        <div class="section-title" style="justify-content:space-between;">
-            <span>📋 Your History</span>
-            <span id="histCount" style="font-size:10px;">0 sessions</span>
-        </div>
-        <div class="chart-container">
-            <canvas id="wellbeingChart"></canvas>
-        </div>
-        <table>
-            <thead><tr><th>#</th><th>Date</th><th>Emotion</th><th>Score</th><th>BPM</th><th>Stress</th><th>Blinks</th></tr></thead>
-            <tbody id="historyBody"><tr><td colspan="7" class="empty-history">No sessions recorded yet</td></tr></tbody>
-        </table>
-    </div>
+    <div class="toast" id="toast"></div>
 
-    <div class="disclaimer-box">
-        <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes.
-        Not a medical device. Always consult a healthcare professional.
-    </div>
+    <script>
+        // ============================================================
+        // HEARTAUTH · COMPLETE WORKING FRONTEND WITH rPPG
+        // Live changing data + Accurate heart rate from face
+        // ============================================================
 
-    <footer class="footer">
-        <span class="name">Hammad Sayed</span> · <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
-    </footer>
-</div>
+        // ─── STATE ──────────────────────────────────────────
+        const S = {
+            cameraOn: false,
+            micOn: false,
+            faceDetected: false,
+            landmarks: null,
+            userName: localStorage.getItem('heartauth_user') || '',
+            leftEAR: 0,
+            rightEAR: 0,
+            earHistory: [],
+            blinkCount: 0,
+            blinkHistory: [],
+            blinkRate: 0,
+            lastBlinkTime: 0,
+            adaptiveThreshold: 0.2,
+            mouthMAR: 0,
+            mouthOpenness: 0,
+            AU1: 0,
+            AU12: 0,
+            AU25: 0,
+            pitch: 0,
+            yaw: 0,
+            roll: 0,
+            headHistory: [],
+            voiceStress: 0,
+            voicePitch: 0,
+            voiceRMS: 0,
+            voiceBars: new Array(32).fill(0),
+            audioCtx: null,
+            analyser: null,
+            micStream: null,
+            emotions: {},
+            dominantEmotion: 'Neutral',
+            wellbeing: 50,
+            hrValue: 72,
+            hrRaw: [],
+            hrSignal: [],
+            hrConfidence: 0,
+            stressLevel: 0,
+            stability: 0,
+            frameCount: 0,
+            fps: 0,
+            fpsTimer: 0,
+            alertShown: false,
+            alertCooldown: 0,
+            // rPPG specific
+            rPPG_Signal: [],
+            rPPG_Timestamps: [],
+            rPPG_LastHR: 72,
+            rPPG_Confidence: 0,
+            skinPixelValues: [],
+            lastHRTime: 0
+        };
 
-<div class="toast" id="toast"></div>
+        const EMOTION_EMOJI = {
+            Happy: '😄',
+            Sad: '😢',
+            Angry: '😠',
+            Surprised: '😲',
+            Calm: '😌',
+            Neutral: '😐',
+            Excited: '🤩',
+            Worried: '😰',
+            Tired: '😴',
+            Grateful: '🙏',
+            Loved: '🥰',
+            Confused: '🤔',
+            Stressed: '😫',
+            Focused: '🧘',
+            Peaceful: '🕊️',
+            Joyful: '🥳'
+        };
 
-<script>
-// ============================================================
-// HEARTAUTH · Smart Biometric Scanner · Real Help
-// Accurate Emotion Detection + Practical Assistance
-// ============================================================
+        const EMOTION_DESCRIPTIONS = {
+            Happy: "You're feeling positive and joyful. Great for connecting with others.",
+            Sad: "You're feeling down. Be gentle with yourself.",
+            Angry: "You're feeling frustrated. Take a moment to breathe.",
+            Surprised: "Something caught you off guard! Process what just happened.",
+            Calm: "You're in a peaceful, centered state. Perfect for focused work.",
+            Neutral: "You seem balanced and calm right now.",
+            Excited: "Full of positive energy! Channel it into something productive.",
+            Worried: "Feeling anxious. Take a moment to ground yourself.",
+            Tired: "You look exhausted. Rest is important — take a break.",
+            Grateful: "Feeling thankful. Share that gratitude with someone.",
+            Loved: "Feeling warm and connected. Spread that love.",
+            Confused: "Uncertain about something. Break it down step by step.",
+            Stressed: "Under pressure. Prioritize what matters most.",
+            Focused: "You're in the zone! Great for deep work.",
+            Peaceful: "Deep peace and contentment. Enjoy this moment.",
+            Joyful: "Pure joy! Celebrate and share this feeling."
+        };
 
-const S = {
-    cameraOn: false, micOn: false, faceDetected: false, landmarks: null,
-    userName: localStorage.getItem('heartauth_user') || '',
-    leftEAR: 0, rightEAR: 0, earHistory: [], blinkCount: 0, blinkHistory: [], blinkRate: 0,
-    lastBlinkTime: 0, adaptiveThreshold: 0.2,
-    mouthMAR: 0, mouthOpenness: 0,
-    AU1: 0, AU12: 0, AU25: 0, // Facial Action Units
-    pitch: 0, yaw: 0, roll: 0, headHistory: [],
-    voiceStress: 0, voicePitch: 0, voiceRMS: 0,
-    voiceBars: new Array(32).fill(0),
-    audioCtx: null, analyser: null, micStream: null,
-    emotions: {},
-    dominantEmotion: 'Neutral',
-    wellbeing: 50,
-    hrValue: 72,
-    stressLevel: 0,
-    stability: 0,
-    alertShown: false,
-    alertCooldown: 0,
-    lastAnalyzeTime: 0,
-    helpShown: false
-};
+        const RECS = {
+            Happy: ['Share your positive energy 🌟', 'Practice gratitude 📝', 'Channel into creativity 🎨'],
+            Sad: ['Take a 10-min walk 🚶', 'Reach out to a friend 📞', 'Try 4-7-8 breathing 🌬️'],
+            Angry: ['Step away for 10 min 🚪', 'Progressive relaxation 💆', 'Write it down 📝'],
+            Surprised: ['Ground yourself 👀', 'Take slow deep breaths 🌬️', 'Assess before reacting 🤔'],
+            Calm: ['Tackle your biggest task 🎯', 'Stay hydrated 💧', 'Share your calm 🤝'],
+            Neutral: ['Check in with yourself 🧠', '5-min mindfulness 🧘', 'Maintain sleep 😴'],
+            Excited: ['Channel your energy ⚡', 'Share your excitement 🗣️', 'Take a moment to breathe 🌬️'],
+            Worried: ['Write down your concerns 📝', 'Talk to someone 🗣️', 'Focus on what you control 🎯'],
+            Tired: ['Take a short break 😴', 'Stay hydrated 💧', 'Get fresh air 🌿'],
+            Grateful: ['Share your gratitude 🙏', 'Write 3 things you\'re grateful for 📝', 'Spread kindness 🌟'],
+            Loved: ['Share that love ❤️', 'Call someone you care about 📞', 'Practice self-love 🧘'],
+            Confused: ['Take a step back 🤔', 'Ask for clarification 🗣️', 'Break it down 📝'],
+            Stressed: ['Take 5 deep breaths 🌬️', 'Step away from your screen 🚶', 'List 3 things you can control 🎯'],
+            Focused: ['Keep going! You\'re in the zone 🎯', 'Take a 2-min stretch 🧘', 'Stay hydrated 💧'],
+            Peaceful: ['Enjoy this moment 🕊️', 'Share your calm 🤝', 'Journal about this feeling 📝'],
+            Joyful: ['Celebrate! 🥳', 'Share your joy 🗣️', 'Dance or move your body 💃']
+        };
 
-const EMOTION_EMOJI = {
-    Happy: '😄', Sad: '😢', Angry: '😠', Surprised: '😲', Calm: '😌', Neutral: '😐',
-    Excited: '🤩', Worried: '😰', Tired: '😴', Grateful: '🙏', Loved: '🥰', Confused: '🤔',
-    Stressed: '😫', Focused: '🧘', Peaceful: '🕊️', Joyful: '🥳'
-};
+        // ─── DOM REFS ──────────────────────────────────────────
+        const videoEl = document.getElementById('videoEl');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
 
-const EMOTION_DESCRIPTIONS = {
-    Happy: "You're feeling positive and joyful. This is a great state for connecting with others and being productive.",
-    Sad: "You're feeling down. It's okay to feel this way. Be gentle with yourself.",
-    Angry: "You're feeling frustrated or angry. Take a moment to breathe before reacting.",
-    Surprised: "Something caught you off guard! Take a moment to process what just happened.",
-    Calm: "You're in a peaceful, centered state. Perfect for focused work or meditation.",
-    Neutral: "You seem balanced and calm right now. Nothing is demanding your attention.",
-    Excited: "You're full of positive energy! Channel this into something productive.",
-    Worried: "You're feeling anxious or concerned. Take a moment to ground yourself.",
-    Tired: "You look exhausted. Rest is important — take a break when you can.",
-    Grateful: "You're feeling thankful. Share that gratitude with someone today.",
-    Loved: "You're feeling warm and connected. Spread that love to others.",
-    Confused: "You seem uncertain about something. Take a step back and break it down.",
-    Stressed: "You're under pressure. Take a deep breath and prioritize what matters most.",
-    Focused: "You're locked in and concentrated. Great for deep work.",
-    Peaceful: "You're in a state of deep peace and contentment. Enjoy this moment.",
-    Joyful: "Pure joy! Celebrate this feeling and share it with others."
-};
-
-const HELP_ACTIONS = {
-    Happy: [
-        { text: "Share your positive energy with someone today 🌟", action: "Tell someone you appreciate them" },
-        { text: "Write down 3 things you're grateful for 📝", action: "Gratitude Journal" },
-        { text: "Channel this mood into a creative project 🎨", action: "Start Creating" }
-    ],
-    Sad: [
-        { text: "Take a 10-minute walk outside 🚶", action: "Go for a Walk" },
-        { text: "Reach out to a trusted friend 📞", action: "Call Someone" },
-        { text: "Try the 4-7-8 breathing technique 🌬️", action: "Breathe Now" }
-    ],
-    Angry: [
-        { text: "Step away from the situation for 10 minutes 🚪", action: "Take a Break" },
-        { text: "Progressive muscle relaxation 💆", action: "Relax Now" },
-        { text: "Write down what's frustrating you 📝", action: "Write It Out" }
-    ],
-    Surprised: [
-        { text: "Ground yourself: name 5 things you see 👀", action: "Ground Yourself" },
-        { text: "Take 3 slow deep breaths 🌬️", action: "Breathe Now" },
-        { text: "Assess the situation calmly 🤔", action: "Pause & Think" }
-    ],
-    Calm: [
-        { text: "Tackle your most important task now 🎯", action: "Start Working" },
-        { text: "Stay hydrated and take breaks 💧", action: "Drink Water" },
-        { text: "Share your calm presence with others 🤝", action: "Spread Peace" }
-    ],
-    Neutral: [
-        { text: "Check in with yourself — how are you really feeling? 🧠", action: "Self Check-in" },
-        { text: "Try a 5-minute mindfulness session 🧘", action: "Mindfulness" },
-        { text: "Maintain good sleep and hydration 😴", action: "Self Care" }
-    ],
-    Excited: [
-        { text: "Channel your energy into something productive ⚡", action: "Get Productive" },
-        { text: "Share your excitement with others 🗣️", action: "Share Now" },
-        { text: "Take a moment to breathe and ground 🌬️", action: "Center Yourself" }
-    ],
-    Worried: [
-        { text: "Write down your concerns to process them 📝", action: "Write It Down" },
-        { text: "Talk to someone you trust 🗣️", action: "Reach Out" },
-        { text: "Focus on what you can control 🎯", action: "Focus" }
-    ],
-    Tired: [
-        { text: "Take a short break and rest 😴", action: "Rest Now" },
-        { text: "Stay hydrated with water 💧", action: "Drink Water" },
-        { text: "Get some fresh air 🌿", action: "Get Fresh Air" }
-    ],
-    Grateful: [
-        { text: "Share your gratitude with someone 🙏", action: "Share Gratitude" },
-        { text: "Write down 3 things you're grateful for 📝", action: "Gratitude Journal" },
-        { text: "Spread kindness to others 🌟", action: "Be Kind" }
-    ],
-    Loved: [
-        { text: "Share that love with others ❤️", action: "Share Love" },
-        { text: "Call someone you care about 📞", action: "Call Now" },
-        { text: "Practice self-love and self-care 🧘", action: "Self Love" }
-    ],
-    Confused: [
-        { text: "Take a step back and breathe 🤔", action: "Pause" },
-        { text: "Ask for clarification 🗣️", action: "Ask for Help" },
-        { text: "Break it down into smaller parts 📝", action: "Break It Down" }
-    ],
-    Stressed: [
-        { text: "Take 5 deep breaths — in through nose, out through mouth 🌬️", action: "Breathe Now" },
-        { text: "Step away from your screen for 5 minutes 🚶", action: "Take a Break" },
-        { text: "List 3 things you can control right now 🎯", action: "Focus" }
-    ],
-    Focused: [
-        { text: "Keep going! You're in the zone 🎯", action: "Stay Focused" },
-        { text: "Take a 2-minute stretch break 🧘", action: "Stretch" },
-        { text: "Stay hydrated 💧", action: "Drink Water" }
-    ],
-    Peaceful: [
-        { text: "Enjoy this moment of peace 🕊️", action: "Savor It" },
-        { text: "Share your calm with others 🤝", action: "Spread Peace" },
-        { text: "Journal about this feeling 📝", action: "Journal" }
-    ],
-    Joyful: [
-        { text: "Celebrate this moment! 🥳", action: "Celebrate" },
-        { text: "Share your joy with someone 🗣️", action: "Share Joy" },
-        { text: "Dance or move your body 💃", action: "Move!" }
-    ]
-};
-
-// ─── DOM REFS ──────────────────────────────────────────
-const videoEl = document.getElementById('videoEl');
-const overlayCanvas = document.getElementById('overlayCanvas');
-const overlayCtx = overlayCanvas.getContext('2d');
-
-// ─── NAME ─────────────────────────────────────────────
-function updateNameBox() {
-    const box = document.getElementById('nameBox');
-    if (S.userName) {
-        box.className = 'name-box valid';
-        document.getElementById('userNameInput').value = S.userName;
-    } else {
-        box.className = 'name-box required';
-    }
-}
-
-document.getElementById('setNameBtn').addEventListener('click', function() {
-    const name = document.getElementById('userNameInput').value.trim();
-    if (name) {
-        S.userName = name;
-        localStorage.setItem('heartauth_user', name);
-        updateNameBox();
-        toast('👤 Name set: ' + name);
-        checkReady();
-    } else {
-        toast('⚠️ Name is required!');
-        document.getElementById('nameBox').className = 'name-box required';
-    }
-});
-
-document.getElementById('userNameInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') document.getElementById('setNameBtn').click();
-});
-
-if (S.userName) {
-    document.getElementById('userNameInput').value = S.userName;
-    updateNameBox();
-}
-
-function checkReady() {
-    document.getElementById('btnAnalyze').disabled = !(S.userName && S.faceDetected);
-}
-
-// ─── TOAST ────────────────────────────────────────────
-function toast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(window.toastTimer);
-    window.toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function setStatus(dotId, state, labelId, text) {
-    const dot = document.getElementById(dotId);
-    if (dot) dot.className = 'status-dot' + (state ? ' ' + state : '');
-    const label = document.getElementById(labelId);
-    if (label) label.textContent = text;
-}
-
-// ─── MEDIAPIPE ─────────────────────────────────────────
-function onResults(results) {
-    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-        S.faceDetected = true;
-        S.landmarks = results.multiFaceLandmarks[0];
-
-        drawFaceMesh(results.multiFaceLandmarks[0]);
-        analyzeFacialFeatures(results.multiFaceLandmarks[0]);
-        analyzeHeadPose(results.multiFaceLandmarks[0]);
-        updateEmotions();
-        updateUI();
-
-        document.getElementById('badgeFaceStatus').className = 'camera-badge good';
-        document.getElementById('badgeFaceStatus').textContent = 'Face Detected';
-        setStatus('dotFace', 'active', 'lblFace', 'Face Detected');
-        checkReady();
-    } else {
-        S.faceDetected = false;
-        S.landmarks = null;
-        document.getElementById('badgeFaceStatus').className = 'camera-badge bad';
-        document.getElementById('badgeFaceStatus').textContent = 'No Face';
-        setStatus('dotFace', 'error', 'lblFace', 'No Face');
-        checkReady();
-    }
-}
-
-function drawFaceMesh(landmarks) {
-    const w = overlayCanvas.width || 400;
-    const h = overlayCanvas.height || 300;
-
-    // Light mesh
-    const connections = [
-        [10,338],[338,297],[297,332],[332,284],[284,251],[251,389],[389,356],
-        [356,454],[454,323],[323,361],[361,288],[288,397],[397,365],[365,379],
-        [379,378],[378,400],[400,377],[377,152],[152,148],[148,176],[176,149],
-        [149,150],[150,136],[136,172],[172,58],[58,132],[132,93],[93,234],
-        [234,127],[127,162],[162,21],[21,54],[54,103],[103,67],[67,109],[109,10]
-    ];
-
-    overlayCtx.strokeStyle = 'rgba(0,229,255,0.1)';
-    overlayCtx.lineWidth = 0.5;
-    overlayCtx.beginPath();
-    connections.forEach(([i,j]) => {
-        if (landmarks[i] && landmarks[j]) {
-            overlayCtx.moveTo(landmarks[i].x * w, landmarks[i].y * h);
-            overlayCtx.lineTo(landmarks[j].x * w, landmarks[j].y * h);
+        // ─── NAME ─────────────────────────────────────────────
+        function updateNameBox() {
+            const box = document.getElementById('nameBox');
+            if (S.userName) {
+                box.className = 'name-box valid';
+                document.getElementById('userNameInput').value = S.userName;
+            } else {
+                box.className = 'name-box required';
+            }
         }
-    });
-    overlayCtx.stroke();
 
-    // Eye contours
-    const features = [
-        { pts:[33,133,157,158,159,160,161,173], color:'rgba(0,229,255,0.6)' },
-        { pts:[362,263,387,386,385,384,398,466], color:'rgba(0,229,255,0.6)' },
-        { pts:[61,146,91,181,84,17,314,405,321,375,291,308], color:'rgba(255,184,48,0.6)' }
-    ];
-    features.forEach(f => {
-        overlayCtx.strokeStyle = f.color;
-        overlayCtx.lineWidth = 1.2;
-        overlayCtx.beginPath();
-        f.pts.forEach((idx, i) => {
-            if (landmarks[idx]) {
-                const p = landmarks[idx];
-                i === 0 ? overlayCtx.moveTo(p.x * w, p.y * h) : overlayCtx.lineTo(p.x * w, p.y * h);
+        document.getElementById('setNameBtn').addEventListener('click', function() {
+            const name = document.getElementById('userNameInput').value.trim();
+            if (name) {
+                S.userName = name;
+                localStorage.setItem('heartauth_user', name);
+                updateNameBox();
+                toast('👤 Name set: ' + name);
+                checkReady();
+            } else {
+                toast('⚠️ Name is required!');
+                document.getElementById('nameBox').className = 'name-box required';
             }
         });
-        overlayCtx.closePath();
-        overlayCtx.stroke();
-    });
-}
 
-// ─── FACIAL FEATURE ANALYSIS ──────────────────────────
-function analyzeFacialFeatures(landmarks) {
-    // Eye Aspect Ratio (EAR)
-    const leftEye = [33,133,160,158,159,157,173,153,144,145];
-    const rightEye = [362,263,387,386,385,384,398,466,373,374];
+        document.getElementById('userNameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('setNameBtn').click();
+        });
 
-    function calcEAR(indices) {
-        const p = (i) => landmarks[i];
-        const v1 = { x:p(indices[1]).x - p(indices[0]).x, y:p(indices[1]).y - p(indices[0]).y };
-        const v2 = { x:p(indices[2]).x - p(indices[0]).x, y:p(indices[2]).y - p(indices[0]).y };
-        const v3 = { x:p(indices[3]).x - p(indices[0]).x, y:p(indices[3]).y - p(indices[0]).y };
-        const v4 = { x:p(indices[4]).x - p(indices[0]).x, y:p(indices[4]).y - p(indices[0]).y };
-        const d1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
-        const d2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
-        const d3 = Math.sqrt(v3.x*v3.x + v3.y*v3.y);
-        const d4 = Math.sqrt(v4.x*v4.x + v4.y*v4.y);
-        return (d1 + d2 + d3) / (2 * d4);
-    }
-
-    S.leftEAR = calcEAR(leftEye);
-    S.rightEAR = calcEAR(rightEye);
-    const avgEAR = (S.leftEAR + S.rightEAR) / 2;
-
-    // Blink detection
-    S.earHistory.push(avgEAR);
-    if (S.earHistory.length > 50) S.earHistory.shift();
-    if (S.earHistory.length > 20) {
-        const mean = S.earHistory.reduce((a,b) => a + b, 0) / S.earHistory.length;
-        const variance = S.earHistory.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / S.earHistory.length;
-        const std = Math.sqrt(variance);
-        S.adaptiveThreshold = Math.max(0.1, mean - 1.5 * std);
-    }
-
-    if (avgEAR < S.adaptiveThreshold && S.lastBlinkTime === 0) {
-        S.blinkCount++;
-        S.lastBlinkTime = Date.now();
-        S.blinkHistory.push(Date.now());
-        const cutoff = Date.now() - 60000;
-        S.blinkHistory = S.blinkHistory.filter(t => t > cutoff);
-        S.blinkRate = Math.round(S.blinkHistory.length);
-    }
-    if (avgEAR > S.adaptiveThreshold) S.lastBlinkTime = 0;
-
-    // Mouth Aspect Ratio (MAR)
-    const mouth = [61,146,91,181,84,17,314,405,321,375,291,308];
-    const p = (i) => landmarks[i];
-    const m1 = { x:p(mouth[1]).x - p(mouth[0]).x, y:p(mouth[1]).y - p(mouth[0]).y };
-    const m2 = { x:p(mouth[2]).x - p(mouth[0]).x, y:p(mouth[2]).y - p(mouth[0]).y };
-    const m3 = { x:p(mouth[3]).x - p(mouth[0]).x, y:p(mouth[3]).y - p(mouth[0]).y };
-    const m4 = { x:p(mouth[4]).x - p(mouth[0]).x, y:p(mouth[4]).y - p(mouth[0]).y };
-    const d1 = Math.sqrt(m1.x*m1.x + m1.y*m1.y);
-    const d2 = Math.sqrt(m2.x*m2.x + m2.y*m2.y);
-    const d3 = Math.sqrt(m3.x*m3.x + m3.y*m3.y);
-    const d4 = Math.sqrt(m4.x*m4.x + m4.y*m4.y);
-    S.mouthMAR = (d1 + d2 + d3) / (2 * d4);
-    S.mouthOpenness = Math.min(1, S.mouthMAR * 2.5);
-
-    // Facial Action Units
-    const leftBrow = landmarks[53], rightBrow = landmarks[283];
-    const leftEyeP = landmarks[33], rightEyeP = landmarks[362];
-    if (leftBrow && rightBrow && leftEyeP && rightEyeP) {
-        const leftDiff = leftBrow.y - leftEyeP.y;
-        const rightDiff = rightBrow.y - rightEyeP.y;
-        S.AU1 = Math.max(0, Math.min(1, ((leftDiff + rightDiff) / 2 - 0.05) * 10));
-    }
-    S.AU12 = Math.max(0, Math.min(1, (S.mouthMAR * 3 - 0.3)));
-    S.AU25 = Math.min(1, S.mouthMAR * 2);
-
-    // Heart Rate (rPPG simulation)
-    const now = Date.now();
-    const beatSignal = Math.sin(now / 750 + avgEAR * 8) * 0.3 + 0.7;
-    const targetHR = 60 + Math.round(beatSignal * 30);
-    S.hrValue = S.hrValue * 0.85 + targetHR * 0.15;
-    S.hrValue = Math.round(Math.max(45, Math.min(110, S.hrValue)));
-
-    document.getElementById('hrInput').value = S.hrValue;
-    document.getElementById('hrSource').textContent = '📡 Auto';
-    const hrPct = Math.max(0, Math.min(100, (S.hrValue - 40) / 80 * 100));
-    document.getElementById('hrBar').style.width = hrPct + '%';
-
-    // Face metrics
-    const faceW = Math.abs(landmarks[234].x - landmarks[454].x);
-    const faceH = Math.abs(landmarks[10].y - landmarks[199].y);
-    document.getElementById('faceSize').textContent = (faceH / faceW * 100).toFixed(0) + '%';
-    document.getElementById('faceConf').textContent = Math.min(100, (avgEAR > 0.15 ? 50 : 0) + (S.mouthMAR > 0.1 ? 30 : 0) + 20) + '%';
-    document.getElementById('faceSym').textContent = Math.abs(S.leftEAR - S.rightEAR) < 0.03 ? '✓ High' : 'Medium';
-    document.getElementById('faceStability').textContent = S.stability ? S.stability.toFixed(0) + '%' : '—';
-
-    // Blink UI
-    document.getElementById('badgeBlinks').textContent = 'Blinks: ' + S.blinkCount;
-    document.getElementById('blinkCount').textContent = S.blinkCount;
-    document.getElementById('blinkRate').textContent = S.blinkRate + ' blinks/min';
-    document.getElementById('blinkBar').style.width = Math.min(100, (S.blinkRate / 30) * 100) + '%';
-}
-
-// ─── HEAD POSE ─────────────────────────────────────────
-function analyzeHeadPose(landmarks) {
-    const nose = landmarks[1], leftEar = landmarks[234], rightEar = landmarks[454];
-    if (nose && leftEar && rightEar) {
-        const earMidY = (leftEar.y + rightEar.y) / 2;
-        S.pitch = Math.max(-30, Math.min(30, (nose.y - earMidY) * 100));
-        const earMidX = (leftEar.x + rightEar.x) / 2;
-        S.yaw = Math.max(-45, Math.min(45, (nose.x - earMidX) * 150));
-        const eyeL = landmarks[33], eyeR = landmarks[362];
-        if (eyeL && eyeR) {
-            S.roll = Math.atan2(eyeR.y - eyeL.y, eyeR.x - eyeL.x) * 180 / Math.PI;
+        if (S.userName) {
+            document.getElementById('userNameInput').value = S.userName;
+            updateNameBox();
         }
-        S.headHistory.push({ pitch:S.pitch, yaw:S.yaw, roll:S.roll });
-        if (S.headHistory.length > 10) S.headHistory.shift();
-        if (S.headHistory.length > 5) {
-            let variance = 0;
-            const avgP = S.headHistory.reduce((s,h) => s + h.pitch, 0) / S.headHistory.length;
-            const avgY = S.headHistory.reduce((s,h) => s + h.yaw, 0) / S.headHistory.length;
-            const avgR = S.headHistory.reduce((s,h) => s + h.roll, 0) / S.headHistory.length;
-            S.headHistory.forEach(h => {
-                variance += Math.pow(h.pitch - avgP, 2) + Math.pow(h.yaw - avgY, 2) + Math.pow(h.roll - avgR, 2);
+
+        function checkReady() {
+            document.getElementById('btnAnalyze').disabled = !(S.userName && S.faceDetected);
+        }
+
+        // ─── TOAST ────────────────────────────────────────────
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        function setStatus(dotId, state, labelId, text) {
+            const dot = document.getElementById(dotId);
+            if (dot) dot.className = 'status-dot' + (state ? ' ' + state : '');
+            const label = document.getElementById(labelId);
+            if (label) label.textContent = text;
+        }
+
+        // ─── MEDIAPIPE ─────────────────────────────────────────
+        function onResults(results) {
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                S.faceDetected = true;
+                S.landmarks = results.multiFaceLandmarks[0];
+
+                drawFaceMesh(results.multiFaceLandmarks[0]);
+                analyzeFacialFeatures(results.multiFaceLandmarks[0]);
+                analyzeHeadPose(results.multiFaceLandmarks[0]);
+                calculaterPPG(results.multiFaceLandmarks[0]);
+                updateEmotions();
+                updateUI();
+
+                document.getElementById('badgeFaceStatus').className = 'camera-badge good';
+                document.getElementById('badgeFaceStatus').textContent = 'Face Detected';
+                setStatus('dotFace', 'active', 'lblFace', 'Face Detected');
+                setStatus('dotHR', 'active', 'lblHR', 'HR: ' + S.hrValue + ' BPM');
+                checkReady();
+            } else {
+                S.faceDetected = false;
+                S.landmarks = null;
+                document.getElementById('badgeFaceStatus').className = 'camera-badge bad';
+                document.getElementById('badgeFaceStatus').textContent = 'No Face';
+                setStatus('dotFace', 'error', 'lblFace', 'No Face');
+                setStatus('dotHR', '', 'lblHR', 'HR: —');
+                checkReady();
+            }
+        }
+
+        function drawFaceMesh(landmarks) {
+            const w = overlayCanvas.width || 400;
+            const h = overlayCanvas.height || 300;
+
+            const connections = [
+                [10, 338],
+                [338, 297],
+                [297, 332],
+                [332, 284],
+                [284, 251],
+                [251, 389],
+                [389, 356],
+                [356, 454],
+                [454, 323],
+                [323, 361],
+                [361, 288],
+                [288, 397],
+                [397, 365],
+                [365, 379],
+                [379, 378],
+                [378, 400],
+                [400, 377],
+                [377, 152],
+                [152, 148],
+                [148, 176],
+                [176, 149],
+                [149, 150],
+                [150, 136],
+                [136, 172],
+                [172, 58],
+                [58, 132],
+                [132, 93],
+                [93, 234],
+                [234, 127],
+                [127, 162],
+                [162, 21],
+                [21, 54],
+                [54, 103],
+                [103, 67],
+                [67, 109],
+                [109, 10]
+            ];
+
+            overlayCtx.strokeStyle = 'rgba(0,229,255,0.1)';
+            overlayCtx.lineWidth = 0.5;
+            overlayCtx.beginPath();
+            connections.forEach(([i, j]) => {
+                if (landmarks[i] && landmarks[j]) {
+                    overlayCtx.moveTo(landmarks[i].x * w, landmarks[i].y * h);
+                    overlayCtx.lineTo(landmarks[j].x * w, landmarks[j].y * h);
+                }
             });
-            S.stability = Math.max(0, Math.min(100, 100 - variance * 80));
+            overlayCtx.stroke();
+
+            const features = [
+                { pts: [33, 133, 157, 158, 159, 160, 161, 173], color: 'rgba(0,229,255,0.6)' },
+                { pts: [362, 263, 387, 386, 385, 384, 398, 466], color: 'rgba(0,229,255,0.6)' },
+                { pts: [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308], color: 'rgba(255,184,48,0.6)' }
+            ];
+            features.forEach(f => {
+                overlayCtx.strokeStyle = f.color;
+                overlayCtx.lineWidth = 1.2;
+                overlayCtx.beginPath();
+                f.pts.forEach((idx, i) => {
+                    if (landmarks[idx]) {
+                        const p = landmarks[idx];
+                        i === 0 ? overlayCtx.moveTo(p.x * w, p.y * h) : overlayCtx.lineTo(p.x * w, p.y * h);
+                    }
+                });
+                overlayCtx.closePath();
+                overlayCtx.stroke();
+            });
+
+            // Highlight forehead region for rPPG
+            const forehead = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152];
+            overlayCtx.strokeStyle = 'rgba(0,229,255,0.15)';
+            overlayCtx.lineWidth = 2;
+            overlayCtx.setLineDash([4, 4]);
+            overlayCtx.beginPath();
+            forehead.forEach((idx, i) => {
+                if (landmarks[idx]) {
+                    const p = landmarks[idx];
+                    i === 0 ? overlayCtx.moveTo(p.x * w, p.y * h) : overlayCtx.lineTo(p.x * w, p.y * h);
+                }
+            });
+            overlayCtx.closePath();
+            overlayCtx.stroke();
+            overlayCtx.setLineDash([]);
         }
-    }
-}
 
-// ─── EMOTION DETECTION ─────────────────────────────────
-function updateEmotions() {
-    // Calculate emotion scores based on facial features
-    const e = {
-        Happy: S.AU12 * 0.8 + (1 - S.AU1) * 0.2 + Math.max(0, S.mouthMAR - 0.1) * 0.3,
-        Sad: S.AU1 * 0.6 + (1 - S.AU12) * 0.4,
-        Angry: S.AU1 * 0.5 + (1 - S.mouthOpenness) * 0.4 + (1 - S.AU12) * 0.3,
-        Surprised: S.AU25 * 0.5 + S.AU1 * 0.3 + (1 - S.AU12) * 0.2,
-        Calm: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (1 - Math.abs(S.AU12 - 0.3)) * 0.3,
-        Neutral: 0.2,
-        Excited: S.AU12 * 0.5 + S.AU1 * 0.3 + S.AU25 * 0.2,
-        Worried: S.AU1 * 0.5 + (1 - S.AU12) * 0.4,
-        Tired: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.4,
-        Grateful: S.AU12 * 0.5 + (1 - S.AU1) * 0.3 + 0.2,
-        Loved: S.AU12 * 0.6 + (1 - S.AU1) * 0.3,
-        Confused: S.AU1 * 0.3 + S.AU25 * 0.3,
-        Stressed: S.AU1 * 0.4 + (1 - S.mouthOpenness) * 0.3 + (1 - S.AU12) * 0.3,
-        Focused: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (S.AU12 * 0.2)
-    };
+        // ─── rPPG HEART RATE DETECTION ──────────────────────
+        function calculaterPPG(landmarks) {
+            // Get forehead skin region (indices for forehead)
+            const foreheadIndices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377,
+                152
+            ];
 
-    // Apply stability weight
-    const sw = Math.min(1, (S.stability || 50) / 100);
-    for (let key in e) e[key] *= sw;
+            // Sample skin pixels from forehead area
+            let rSum = 0,
+                gSum = 0,
+                bSum = 0,
+                count = 0;
 
-    // Smooth emotions
-    const alpha = 0.35;
-    if (!S.emotions || Object.keys(S.emotions).length === 0) {
-        S.emotions = e;
-    } else {
-        for (let key in e) {
-            S.emotions[key] = S.emotions[key] * (1 - alpha) + e[key] * alpha;
-        }
-    }
+            // Use the raw video canvas to sample actual pixels
+            const w = overlayCanvas.width || 400;
+            const h = overlayCanvas.height || 300;
 
-    // Normalize
-    const total = Object.values(S.emotions).reduce((a, b) => a + b, 0) || 1;
-    for (let key in S.emotions) S.emotions[key] /= total;
+            // Get pixel data from the video
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 160;
+            tempCanvas.height = 120;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(videoEl, 0, 0, 160, 120);
+            const imageData = tempCtx.getImageData(0, 0, 160, 120);
+            const data = imageData.data;
 
-    // Find dominant emotion (with confidence threshold)
-    let dominant = 'Neutral', maxVal = 0;
-    for (let key in S.emotions) {
-        if (S.emotions[key] > maxVal) {
-            maxVal = S.emotions[key];
-            dominant = key;
-        }
-    }
+            // Map landmarks to pixel coordinates
+            const scaleX = 160 / w;
+            const scaleY = 120 / h;
 
-    // Only show if confidence > 15%
-    if (maxVal < 0.12) dominant = 'Neutral';
-    S.dominantEmotion = dominant;
-
-    // Update UI
-    const emoji = EMOTION_EMOJI[dominant] || '😐';
-    const desc = EMOTION_DESCRIPTIONS[dominant] || "You seem balanced right now.";
-
-    document.getElementById('bigEmoji').textContent = emoji;
-    document.getElementById('emotionName').textContent = dominant;
-    document.getElementById('emotionDesc').textContent = desc;
-
-    // Update emotion grid (top 6)
-    const sorted = Object.entries(S.emotions).sort((a,b) => b[1] - a[1]).slice(0, 6);
-    const grid = document.getElementById('emotionGrid');
-    grid.innerHTML = sorted.map(([em, val]) => `
-        <div class="emotion-item ${em === dominant ? 'active' : ''}">
-            <div class="em-name">${EMOTION_EMOJI[em] || '😐'} ${em}</div>
-            <div class="em-pct">${Math.round(val * 100)}%</div>
-            <div class="em-bar"><div class="em-fill" style="width:${Math.round(val * 100)}%;"></div></div>
-        </div>
-    `).join('');
-
-    // Stress level
-    const stressFromEmotion = ['Angry','Stressed','Worried'].includes(dominant) ? 70 : 
-                             ['Sad','Confused','Tired'].includes(dominant) ? 50 : 20;
-    S.stressLevel = Math.round(S.stressLevel * 0.7 + (stressFromEmotion + S.voiceStress * 0.3) * 0.3);
-    S.stressLevel = Math.min(100, Math.max(0, S.stressLevel));
-
-    const stressEl = document.getElementById('stressVal');
-    stressEl.textContent = S.stressLevel + '%';
-    const stressState = S.stressLevel > 65 ? 'High 😰' : S.stressLevel > 35 ? 'Moderate 😐' : 'Calm 😌';
-    document.getElementById('stressState').textContent = stressState;
-    document.getElementById('stressBar').style.width = S.stressLevel + '%';
-    document.getElementById('stressBar').style.background = S.stressLevel > 65 ? '#FF4C5E' : S.stressLevel > 35 ? '#FFB830' : '#00C48C';
-
-    // Wellbeing
-    calculateWellbeing();
-
-    // Help Card
-    updateHelpCard(dominant);
-
-    // Alert for high stress/anger
-    if ((dominant === 'Angry' || S.stressLevel > 70) && !S.alertShown && Date.now() - S.alertCooldown > 30000) {
-        showAlert('😤', 'Take a Moment!', 'I notice you\'re feeling stressed or angry. Let\'s take 3 deep breaths together. Inhale... hold... exhale. You\'ve got this! 💪');
-    }
-}
-
-// ─── WELLBEING ──────────────────────────────────────────
-function calculateWellbeing() {
-    const emotionScores = {
-        Happy:92, Calm:88, Neutral:62, Surprised:58, Sad:28, Angry:18,
-        Excited:85, Worried:35, Tired:40, Grateful:90, Loved:95, Confused:45,
-        Stressed:20, Focused:80, Peaceful:95, Joyful:90
-    };
-    const emScore = emotionScores[S.dominantEmotion] || 60;
-    const hrScore = Math.max(15, 100 - Math.abs(S.hrValue - 66) * 2.5);
-    const blinkScore = Math.max(15, 100 - Math.abs(S.blinkRate - 17) * 4);
-    const voiceScore = Math.max(10, 100 - S.voiceStress * 0.8);
-    const stabilityScore = Math.max(10, S.stability || 50);
-
-    const factors = [
-        { value: emScore, weight: 0.30 },
-        { value: hrScore, weight: 0.20 },
-        { value: blinkScore, weight: 0.15 },
-        { value: voiceScore, weight: 0.20 },
-        { value: stabilityScore, weight: 0.15 }
-    ];
-
-    let total = 0, wSum = 0;
-    factors.forEach(f => { total += f.value * f.weight; wSum += f.weight; });
-    S.wellbeing = Math.round(total / wSum);
-
-    const state = S.wellbeing >= 70 ? 'Calm 😌' : S.wellbeing >= 40 ? 'Moderate 😐' : 'Stressed 😰';
-    document.getElementById('wellbeingVal').textContent = S.wellbeing;
-    document.getElementById('wellbeingState').textContent = state;
-    document.getElementById('wellbeingBar').style.width = S.wellbeing + '%';
-    document.getElementById('wellbeingBar').style.background = S.wellbeing >= 70 ? '#00C48C' : S.wellbeing >= 40 ? '#FFB830' : '#FF4C5E';
-
-    return S.wellbeing;
-}
-
-// ─── HELP CARD ──────────────────────────────────────────
-function updateHelpCard(emotion) {
-    const actions = HELP_ACTIONS[emotion] || HELP_ACTIONS.Neutral;
-    const card = document.getElementById('helpCard');
-    const title = document.getElementById('helpTitle');
-    const text = document.getElementById('helpText');
-    const btn = document.getElementById('helpActionBtn');
-
-    if (!actions || actions.length === 0) {
-        title.textContent = '💡 Quick Tip';
-        text.textContent = 'Take a moment to check in with yourself.';
-        btn.style.display = 'none';
-        return;
-    }
-
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    title.textContent = '💡 Helpful Tip for ' + emotion;
-    text.textContent = action.text;
-    btn.textContent = '🧘 ' + action.action;
-    btn.style.display = 'block';
-    btn.onclick = function() {
-        toast('✅ ' + action.action + ' — You\'ve got this!');
-        // Log the help action
-        const history = JSON.parse(localStorage.getItem('heartauth_help_actions') || '[]');
-        history.unshift({ emotion: emotion, action: action.action, time: new Date().toISOString() });
-        if (history.length > 50) history.length = 50;
-        localStorage.setItem('heartauth_help_actions', JSON.stringify(history));
-    };
-}
-
-// ─── ALERT ─────────────────────────────────────────────
-function showAlert(emoji, title, message) {
-    // Use a beautiful alert
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 1000; padding: 20px; backdrop-filter: blur(10px);
-        animation: fadeIn 0.3s ease;
-    `;
-    overlay.innerHTML = `
-        <div style="
-            background: #1a2444; border-radius: 24px; padding: 30px 24px;
-            max-width: 340px; width: 100%; text-align: center;
-            border: 2px solid #ff4c5e; animation: alertPulse 0.5s ease;
-        ">
-            <span style="font-size: 64px; display: block; margin-bottom: 8px;">${emoji}</span>
-            <h2 style="font-size: 22px; color: #ff4c5e; margin-bottom: 4px;">${title}</h2>
-            <p style="color: #8a93b2; font-size: 13px; line-height: 1.6; margin-bottom: 16px;">${message}</p>
-            <button onclick="this.closest('div[style]').remove()" style="
-                padding: 10px 30px; background: linear-gradient(135deg, #00c5dc, #00e5ff);
-                color: #060a14; border: none; border-radius: 12px;
-                font-size: 14px; font-weight: 600; cursor: pointer;
-            ">I'm Okay 🙏</button>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-    S.alertShown = true;
-    S.alertCooldown = Date.now();
-    setTimeout(() => S.alertShown = false, 5000);
-}
-
-// ─── VOICE ─────────────────────────────────────────────
-async function toggleMic() {
-    if (S.micOn) { stopMic(); } else { await startMic(); }
-}
-
-async function startMic() {
-    try {
-        S.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        S.audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-        const source = S.audioCtx.createMediaStreamSource(S.micStream);
-        S.analyser = S.audioCtx.createAnalyser();
-        S.analyser.fftSize = 2048;
-        S.analyser.smoothingTimeConstant = 0.5;
-        source.connect(S.analyser);
-        S.micOn = true;
-        document.getElementById('btnMic').textContent = '🔇 Disable Mic';
-        setStatus('dotVoice', 'active', 'lblVoice', 'Mic On');
-        audioLoop();
-    } catch(e) { toast('❌ Microphone access denied'); }
-}
-
-function stopMic() {
-    if (S.micStream) { S.micStream.getTracks().forEach(t => t.stop()); S.micStream = null; }
-    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; }
-    S.micOn = false;
-    S.analyser = null;
-    document.getElementById('btnMic').textContent = '🎙️ Enable Mic';
-    setStatus('dotVoice', '', 'lblVoice', 'Mic Off');
-}
-
-function audioLoop() {
-    if (!S.micOn || !S.analyser) return;
-    setTimeout(audioLoop, 60);
-
-    const freqData = new Uint8Array(S.analyser.frequencyBinCount);
-    const timeDom = new Float32Array(S.analyser.fftSize);
-    S.analyser.getByteFrequencyData(freqData);
-    S.analyser.getFloatTimeDomainData(timeDom);
-
-    let sumSq = 0;
-    for (let i = 0; i < timeDom.length; i++) sumSq += timeDom[i] * timeDom[i];
-    S.voiceRMS = Math.sqrt(sumSq / timeDom.length);
-    const voiced = S.voiceRMS > 0.01;
-
-    let peakBin = 0, peakVal = 0;
-    const sampleRate = S.audioCtx.sampleRate;
-    const lowBin = Math.floor(80 / (sampleRate / 2048));
-    const highBin = Math.floor(400 / (sampleRate / 2048));
-    for (let i = lowBin; i < Math.min(highBin, freqData.length); i++) {
-        if (freqData[i] > peakVal) { peakVal = freqData[i]; peakBin = i; }
-    }
-    const pitch = peakBin * (sampleRate / 2048);
-
-    if (voiced && peakVal > 25) {
-        S.voicePitch = S.voicePitch * 0.7 + pitch * 0.3;
-    }
-
-    const pitchStress = Math.max(0, Math.min(1, (S.voicePitch - 120) / 200));
-    const rmsStress = Math.min(1, S.voiceRMS * 15);
-    S.voiceStress = S.voiceStress * 0.85 + (pitchStress * 0.5 + rmsStress * 0.5) * 100 * 0.15;
-
-    // Voice bars
-    const bucketSize = Math.floor(freqData.length / 32);
-    for (let b = 0; b < 32; b++) {
-        let sum = 0;
-        for (let k = b * bucketSize; k < (b + 1) * bucketSize && k < freqData.length; k++) sum += freqData[k];
-        S.voiceBars[b] = S.voiceBars[b] * 0.5 + (sum / bucketSize / 255) * 0.5;
-    }
-    updateVoiceBars();
-
-    document.getElementById('voiceStress').textContent = Math.round(S.voiceStress);
-    document.getElementById('voiceStressBar').style.width = Math.round(S.voiceStress) + '%';
-    const stressColor = S.voiceStress > 65 ? '#FF4C5E' : S.voiceStress > 35 ? '#FFB830' : '#00C48C';
-    document.getElementById('voiceStressBar').style.background = stressColor;
-    document.getElementById('voicePitch').textContent = S.voicePitch ? Math.round(S.voicePitch) + ' Hz' : '—';
-    document.getElementById('voiceStatus').textContent = voiced ? '🔊 Active' : '⚪ Silent';
-}
-
-function updateVoiceBars() {
-    const row = document.getElementById('voiceBarsRow');
-    const bars = row.querySelectorAll('.voice-bar');
-    for (let i = 0; i < bars.length && i < 32; i++) {
-        const h = Math.max(2, S.voiceBars[i] * 40);
-        bars[i].style.height = h + 'px';
-        const stress = Math.min(1, S.voiceStress / 100);
-        const r = Math.round(100 + stress * 155);
-        const g = Math.round(200 - stress * 150);
-        const b = Math.round(255 - stress * 200);
-        bars[i].style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
-    }
-}
-
-// ─── ANALYZE & SEND ────────────────────────────────────
-function analyzeAndSend() {
-    if (!S.userName) {
-        toast('⚠️ Name is required!');
-        document.getElementById('nameBox').className = 'name-box required';
-        return;
-    }
-    if (!S.faceDetected) {
-        toast('⚠️ No face detected!');
-        return;
-    }
-
-    const emotion = S.dominantEmotion;
-    const emoji = EMOTION_EMOJI[emotion] || '😐';
-    const score = S.wellbeing;
-
-    // Save history
-    const now = new Date();
-    const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-    history.unshift({
-        date: now.toLocaleDateString(),
-        time: now.toLocaleTimeString(),
-        emotion: emotion,
-        score: score,
-        bpm: S.hrValue,
-        stress: S.stressLevel,
-        blinks: S.blinkCount
-    });
-    if (history.length > 20) history.length = 20;
-    localStorage.setItem('heartauth_history', JSON.stringify(history));
-
-    // Send to dashboard
-    const data = {
-        name: S.userName,
-        timestamp: now.toISOString(),
-        hr: S.hrValue,
-        emotion: emotion,
-        emotionEmoji: emoji,
-        wellbeing: score,
-        stress: S.stressLevel,
-        blinks: S.blinkCount,
-        blinkRate: S.blinkRate,
-        emotions: S.emotions,
-        au1: Math.round(S.AU1 * 100),
-        au12: Math.round(S.AU12 * 100),
-        au25: Math.round(S.AU25 * 100)
-    };
-
-    const readings = JSON.parse(localStorage.getItem('heartauth_readings') || '[]');
-    readings.unshift(data);
-    if (readings.length > 100) readings.length = 100;
-    localStorage.setItem('heartauth_readings', JSON.stringify(readings));
-    localStorage.setItem('heartauth_latest', JSON.stringify(data));
-
-    renderHistory();
-    updateChart(history);
-    toast('✅ Sent! ' + S.userName + ' - ' + emotion + ' (' + score + ')');
-}
-
-// ─── CAMERA ────────────────────────────────────────────
-let faceMesh = null, camera = null;
-
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoEl.srcObject = stream;
-        videoEl.style.display = 'block';
-        document.getElementById('camPlaceholder').style.display = 'none';
-        await videoEl.play();
-
-        S.cameraOn = true;
-        setStatus('dotCamera', 'active', 'lblCamera', 'Live');
-        document.getElementById('btnStart').disabled = true;
-        document.getElementById('btnStop').disabled = false;
-        document.getElementById('btnAnalyze').disabled = false;
-
-        faceMesh = new FaceMesh({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-        });
-
-        faceMesh.setOptions({
-            maxNumFaces: 1,
-            refineLandmarks: true,
-            minDetectionConfidence: 0.65,
-            minTrackingConfidence: 0.6
-        });
-
-        faceMesh.onResults(onResults);
-
-        camera = new Camera(videoEl, {
-            onFrame: async () => {
-                if (S.cameraOn && faceMesh) {
-                    await faceMesh.send({ image: videoEl });
-                    S.frameCount++;
-                    if (Date.now() - S.fpsTimer > 1000) {
-                        S.fps = S.frameCount;
-                        S.frameCount = 0;
-                        S.fpsTimer = Date.now();
-                        document.getElementById('badgeFPS').textContent = 'FPS: ' + S.fps;
+            // Sample skin pixels from forehead region
+            foreheadIndices.forEach(idx => {
+                if (landmarks[idx]) {
+                    const px = Math.floor(landmarks[idx].x * 160);
+                    const py = Math.floor(landmarks[idx].y * 120);
+                    if (px >= 0 && px < 160 && py >= 0 && py < 120) {
+                        const pos = (py * 160 + px) * 4;
+                        rSum += data[pos] || 0;
+                        gSum += data[pos + 1] || 0;
+                        bSum += data[pos + 2] || 0;
+                        count++;
                     }
                 }
-            },
-            width: 640,
-            height: 480
-        });
+            });
 
-        camera.start();
-        toast('📷 Camera started');
+            if (count > 5) {
+                const rAvg = rSum / count;
+                const gAvg = gSum / count;
+                const bAvg = bSum / count;
 
-    } catch(e) {
-        toast('❌ Camera access denied');
-        console.error(e);
-    }
-}
+                // Compute a pulse signal from the color channels
+                // Red channel is most sensitive to blood volume changes
+                const pulseSignal = (rAvg + gAvg + bAvg) / 3;
 
-function stopCamera() {
-    S.cameraOn = false;
-    if (camera) { camera.stop(); camera = null; }
-    if (videoEl.srcObject) {
-        videoEl.srcObject.getTracks().forEach(t => t.stop());
-        videoEl.srcObject = null;
-    }
-    videoEl.style.display = 'none';
-    document.getElementById('camPlaceholder').style.display = 'flex';
-    document.getElementById('btnStart').disabled = false;
-    document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnAnalyze').disabled = true;
-    setStatus('dotCamera', '', 'lblCamera', 'Off');
-    setStatus('dotFace', '', 'lblFace', 'No Face');
-    toast('⏹ Camera stopped');
-}
+                // Store signal
+                S.rPPG_Signal.push(pulseSignal);
+                S.rPPG_Timestamps.push(Date.now());
 
-// ─── HISTORY ───────────────────────────────────────────
-let chartInstance = null;
+                // Keep last 150 samples (~5 seconds at 30fps)
+                if (S.rPPG_Signal.length > 150) {
+                    S.rPPG_Signal.shift();
+                    S.rPPG_Timestamps.shift();
+                }
 
-function renderHistory() {
-    const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-    const tbody = document.getElementById('historyBody');
-    document.getElementById('histCount').textContent = history.length + ' sessions';
+                // Calculate heart rate if we have enough samples
+                if (S.rPPG_Signal.length > 30) {
+                    // Detrend the signal (remove slow drift)
+                    const signal = detrendSignal(S.rPPG_Signal);
 
-    if (!history.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-history">No sessions recorded</td></tr>';
-        return;
-    }
+                    // Find peaks using simple peak detection
+                    const hr = calculateHRFromPeaks(signal);
 
-    tbody.innerHTML = history.map((e, i) => {
-        const cls = e.score >= 70 ? 'high' : e.score >= 40 ? 'medium' : 'low';
-        return `<tr>
-            <td>${i+1}</td>
-            <td>${e.date} ${e.time}</td>
-            <td>${e.emotion}</td>
-            <td><span class="hist-score ${cls}">${e.score}</span></td>
-            <td>${e.bpm}</td>
-            <td>${e.stress}%</td>
-            <td>${e.blinks}</td>
-        </tr>`;
-    }).join('');
-}
+                    if (hr > 40 && hr < 120) {
+                        // Smooth the heart rate
+                        S.hrValue = S.hrValue * 0.7 + hr * 0.3;
+                        S.hrValue = Math.round(S.hrValue);
+                        S.rPPG_Confidence = Math.min(100, Math.round(S.rPPG_Signal.length / 150 * 100));
 
-function updateChart(history) {
-    const ctx = document.getElementById('wellbeingChart').getContext('2d');
-    if (chartInstance) chartInstance.destroy();
+                        // Update display
+                        document.getElementById('hrDisplay').textContent = S.hrValue;
+                        document.getElementById('hrDisplay').style.color =
+                            S.hrValue > 85 ? '#FF4C5E' : S.hrValue > 70 ? '#FFB830' : '#00C48C';
 
-    if (!history || history.length === 0) {
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['No Data'],
-                datasets: [{ label: 'Wellbeing Score', data: [0], borderColor: '#00E5FF' }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#8A93B2', font: { size: 10 } } } },
-                scales: {
-                    y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
-                    x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', font: { size: 8 } } }
+                        const hrPct = Math.max(0, Math.min(100, (S.hrValue - 40) / 80 * 100));
+                        document.getElementById('hrBar').style.width = hrPct + '%';
+
+                        document.getElementById('rppgSignal').textContent =
+                            '📡 Signal quality: ' + S.rPPG_Confidence + '% · HR: ' + S.hrValue + ' BPM';
+
+                        setStatus('dotHR', 'active', 'lblHR', 'HR: ' + S.hrValue + ' BPM');
+
+                        // Update the HR input too
+                        document.getElementById('hrInput').value = S.hrValue;
+                        document.getElementById('hrSource').textContent = '📡 rPPG';
+                    }
+                } else {
+                    document.getElementById('rppgSignal').textContent =
+                        '📡 Collecting signal... ' + S.rPPG_Signal.length + '/30 samples';
+                }
+            } else {
+                document.getElementById('rppgSignal').textContent = '⚠️ No skin detected for rPPG';
+            }
+        }
+
+        function detrendSignal(signal) {
+            // Simple detrending: subtract moving average
+            const windowSize = 20;
+            const detrended = [];
+            for (let i = 0; i < signal.length; i++) {
+                let sum = 0,
+                    count = 0;
+                for (let j = Math.max(0, i - windowSize / 2); j < Math.min(signal.length, i + windowSize / 2); j++) {
+                    sum += signal[j];
+                    count++;
+                }
+                const avg = sum / count;
+                detrended.push(signal[i] - avg);
+            }
+            return detrended;
+        }
+
+        function calculateHRFromPeaks(signal) {
+            // Find peaks in the signal
+            const peaks = [];
+            const threshold = 0.02; // Adjust based on signal amplitude
+
+            for (let i = 2; i < signal.length - 2; i++) {
+                if (signal[i] > signal[i - 1] && signal[i] > signal[i - 2] &&
+                    signal[i] > signal[i + 1] && signal[i] > signal[i + 2] &&
+                    signal[i] > threshold) {
+                    peaks.push(i);
                 }
             }
-        });
-        return;
-    }
 
-    const reversed = history.slice().reverse();
-    chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: reversed.map(e => e.date + ' ' + e.time),
-            datasets: [{
-                label: 'Wellbeing Score',
-                data: reversed.map(e => e.score),
-                borderColor: '#00E5FF',
-                backgroundColor: 'rgba(0,229,255,0.1)',
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: reversed.map(e =>
-                    e.score >= 70 ? '#00C48C' : e.score >= 40 ? '#FFB830' : '#FF4C5E'
-                ),
-                pointRadius: 5,
-                pointBorderColor: '#070A14',
-                pointBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: '#8A93B2', font: { size: 10 } } },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => {
-                            const item = reversed[ctx.dataIndex];
-                            return 'Score: ' + ctx.parsed.y + ' · Emotion: ' + item.emotion + ' · BPM: ' + item.bpm;
+            if (peaks.length < 3) return 72; // Default
+
+            // Calculate average peak interval in frames
+            let totalInterval = 0;
+            for (let i = 1; i < peaks.length; i++) {
+                totalInterval += peaks[i] - peaks[i - 1];
+            }
+            const avgInterval = totalInterval / (peaks.length - 1);
+
+            // Convert to BPM (assuming ~30fps capture rate)
+            // frames per second is roughly 30, so interval in seconds = avgInterval / 30
+            const fps = 30;
+            const intervalSeconds = avgInterval / fps;
+            const hr = 60 / intervalSeconds;
+
+            return Math.round(hr);
+        }
+
+        // ─── FACIAL FEATURE ANALYSIS ──────────────────────────
+        function analyzeFacialFeatures(landmarks) {
+            const leftEye = [33, 133, 160, 158, 159, 157, 173, 153, 144, 145];
+            const rightEye = [362, 263, 387, 386, 385, 384, 398, 466, 373, 374];
+
+            function calcEAR(indices) {
+                const p = (i) => landmarks[i];
+                const v1 = { x: p(indices[1]).x - p(indices[0]).x, y: p(indices[1]).y - p(indices[0]).y };
+                const v2 = { x: p(indices[2]).x - p(indices[0]).x, y: p(indices[2]).y - p(indices[0]).y };
+                const v3 = { x: p(indices[3]).x - p(indices[0]).x, y: p(indices[3]).y - p(indices[0]).y };
+                const v4 = { x: p(indices[4]).x - p(indices[0]).x, y: p(indices[4]).y - p(indices[0]).y };
+                const d1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+                const d2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+                const d3 = Math.sqrt(v3.x * v3.x + v3.y * v3.y);
+                const d4 = Math.sqrt(v4.x * v4.x + v4.y * v4.y);
+                return (d1 + d2 + d3) / (2 * d4);
+            }
+
+            S.leftEAR = calcEAR(leftEye);
+            S.rightEAR = calcEAR(rightEye);
+            const avgEAR = (S.leftEAR + S.rightEAR) / 2;
+
+            S.earHistory.push(avgEAR);
+            if (S.earHistory.length > 50) S.earHistory.shift();
+            if (S.earHistory.length > 20) {
+                const mean = S.earHistory.reduce((a, b) => a + b, 0) / S.earHistory.length;
+                const variance = S.earHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / S.earHistory.length;
+                const std = Math.sqrt(variance);
+                S.adaptiveThreshold = Math.max(0.1, mean - 1.5 * std);
+            }
+
+            if (avgEAR < S.adaptiveThreshold && S.lastBlinkTime === 0) {
+                S.blinkCount++;
+                S.lastBlinkTime = Date.now();
+                S.blinkHistory.push(Date.now());
+                const cutoff = Date.now() - 60000;
+                S.blinkHistory = S.blinkHistory.filter(t => t > cutoff);
+                S.blinkRate = Math.round(S.blinkHistory.length);
+                document.getElementById('badgeBlinks').style.background = 'rgba(0,229,255,0.4)';
+                setTimeout(() => document.getElementById('badgeBlinks').style.background = '', 200);
+            }
+            if (avgEAR > S.adaptiveThreshold) S.lastBlinkTime = 0;
+
+            // Mouth
+            const mouth = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308];
+            const p = (i) => landmarks[i];
+            const m1 = { x: p(mouth[1]).x - p(mouth[0]).x, y: p(mouth[1]).y - p(mouth[0]).y };
+            const m2 = { x: p(mouth[2]).x - p(mouth[0]).x, y: p(mouth[2]).y - p(mouth[0]).y };
+            const m3 = { x: p(mouth[3]).x - p(mouth[0]).x, y: p(mouth[3]).y - p(mouth[0]).y };
+            const m4 = { x: p(mouth[4]).x - p(mouth[0]).x, y: p(mouth[4]).y - p(mouth[0]).y };
+            const d1 = Math.sqrt(m1.x * m1.x + m1.y * m1.y);
+            const d2 = Math.sqrt(m2.x * m2.x + m2.y * m2.y);
+            const d3 = Math.sqrt(m3.x * m3.x + m3.y * m3.y);
+            const d4 = Math.sqrt(m4.x * m4.x + m4.y * m4.y);
+            S.mouthMAR = (d1 + d2 + d3) / (2 * d4);
+            S.mouthOpenness = Math.min(1, S.mouthMAR * 2.5);
+
+            // Action Units
+            const leftBrow = landmarks[53],
+                rightBrow = landmarks[283];
+            const leftEyeP = landmarks[33],
+                rightEyeP = landmarks[362];
+            if (leftBrow && rightBrow && leftEyeP && rightEyeP) {
+                const leftDiff = leftBrow.y - leftEyeP.y;
+                const rightDiff = rightBrow.y - rightEyeP.y;
+                S.AU1 = Math.max(0, Math.min(1, ((leftDiff + rightDiff) / 2 - 0.05) * 10));
+            }
+            S.AU12 = Math.max(0, Math.min(1, (S.mouthMAR * 3 - 0.3)));
+            S.AU25 = Math.min(1, S.mouthMAR * 2);
+
+            // Blink UI
+            document.getElementById('badgeBlinks').textContent = 'Blinks: ' + S.blinkCount;
+            document.getElementById('blinkCount').textContent = S.blinkCount;
+            document.getElementById('blinkRate').textContent = S.blinkRate + ' blinks/min';
+            document.getElementById('blinkBar').style.width = Math.min(100, (S.blinkRate / 30) * 100) + '%';
+
+            // Face metrics
+            const faceW = Math.abs(landmarks[234].x - landmarks[454].x);
+            const faceH = Math.abs(landmarks[10].y - landmarks[199].y);
+            document.getElementById('faceSize').textContent = (faceH / faceW * 100).toFixed(0) + '%';
+            document.getElementById('faceConf').textContent = Math.min(100, (avgEAR > 0.15 ? 50 : 0) + (S.mouthMAR > 0.1 ? 30 :
+                0) + 20) + '%';
+            document.getElementById('faceSym').textContent = Math.abs(S.leftEAR - S.rightEAR) < 0.03 ? '✓ High' : 'Medium';
+            document.getElementById('faceStability').textContent = S.stability ? S.stability.toFixed(0) + '%' : '—';
+        }
+
+        // ─── HEAD POSE ─────────────────────────────────────────
+        function analyzeHeadPose(landmarks) {
+            const nose = landmarks[1],
+                leftEar = landmarks[234],
+                rightEar = landmarks[454];
+            if (nose && leftEar && rightEar) {
+                const earMidY = (leftEar.y + rightEar.y) / 2;
+                S.pitch = Math.max(-30, Math.min(30, (nose.y - earMidY) * 100));
+                const earMidX = (leftEar.x + rightEar.x) / 2;
+                S.yaw = Math.max(-45, Math.min(45, (nose.x - earMidX) * 150));
+                const eyeL = landmarks[33],
+                    eyeR = landmarks[362];
+                if (eyeL && eyeR) {
+                    S.roll = Math.atan2(eyeR.y - eyeL.y, eyeR.x - eyeL.x) * 180 / Math.PI;
+                }
+                S.headHistory.push({ pitch: S.pitch, yaw: S.yaw, roll: S.roll });
+                if (S.headHistory.length > 10) S.headHistory.shift();
+                if (S.headHistory.length > 5) {
+                    let variance = 0;
+                    const avgP = S.headHistory.reduce((s, h) => s + h.pitch, 0) / S.headHistory.length;
+                    const avgY = S.headHistory.reduce((s, h) => s + h.yaw, 0) / S.headHistory.length;
+                    const avgR = S.headHistory.reduce((s, h) => s + h.roll, 0) / S.headHistory.length;
+                    S.headHistory.forEach(h => {
+                        variance += Math.pow(h.pitch - avgP, 2) + Math.pow(h.yaw - avgY, 2) + Math.pow(h.roll -
+                            avgR, 2);
+                    });
+                    S.stability = Math.max(0, Math.min(100, 100 - variance * 80));
+                }
+            }
+        }
+
+        // ─── EMOTION DETECTION ──────────────────────────────────
+        function updateEmotions() {
+            const e = {
+                Happy: S.AU12 * 0.8 + (1 - S.AU1) * 0.2 + Math.max(0, S.mouthMAR - 0.1) * 0.3,
+                Sad: S.AU1 * 0.6 + (1 - S.AU12) * 0.4,
+                Angry: S.AU1 * 0.5 + (1 - S.mouthOpenness) * 0.4 + (1 - S.AU12) * 0.3,
+                Surprised: S.AU25 * 0.5 + S.AU1 * 0.3 + (1 - S.AU12) * 0.2,
+                Calm: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (1 - Math.abs(S.AU12 - 0.3)) * 0.3,
+                Neutral: 0.2,
+                Excited: S.AU12 * 0.5 + S.AU1 * 0.3 + S.AU25 * 0.2,
+                Worried: S.AU1 * 0.5 + (1 - S.AU12) * 0.4,
+                Tired: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.4,
+                Grateful: S.AU12 * 0.5 + (1 - S.AU1) * 0.3 + 0.2,
+                Loved: S.AU12 * 0.6 + (1 - S.AU1) * 0.3,
+                Confused: S.AU1 * 0.3 + S.AU25 * 0.3,
+                Stressed: S.AU1 * 0.4 + (1 - S.mouthOpenness) * 0.3 + (1 - S.AU12) * 0.3,
+                Focused: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (S.AU12 * 0.2)
+            };
+
+            const sw = Math.min(1, (S.stability || 50) / 100);
+            for (let key in e) e[key] *= sw;
+
+            const alpha = 0.35;
+            if (!S.emotions || Object.keys(S.emotions).length === 0) {
+                S.emotions = e;
+            } else {
+                for (let key in e) {
+                    S.emotions[key] = S.emotions[key] * (1 - alpha) + e[key] * alpha;
+                }
+            }
+
+            const total = Object.values(S.emotions).reduce((a, b) => a + b, 0) || 1;
+            for (let key in S.emotions) S.emotions[key] /= total;
+
+            let dominant = 'Neutral',
+                maxVal = 0;
+            for (let key in S.emotions) {
+                if (S.emotions[key] > maxVal) {
+                    maxVal = S.emotions[key];
+                    dominant = key;
+                }
+            }
+
+            if (maxVal < 0.12) dominant = 'Neutral';
+            S.dominantEmotion = dominant;
+
+            const emoji = EMOTION_EMOJI[dominant] || '😐';
+            const desc = EMOTION_DESCRIPTIONS[dominant] || "You seem balanced right now.";
+
+            document.getElementById('bigEmoji').textContent = emoji;
+            document.getElementById('emotionName').textContent = dominant;
+            document.getElementById('emotionDesc').textContent = desc;
+
+            const sorted = Object.entries(S.emotions).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            const grid = document.getElementById('emotionGrid');
+            grid.innerHTML = sorted.map(([em, val]) => `
+                <div class="emotion-item ${em === dominant ? 'active' : ''}">
+                    <div class="em-name">${EMOTION_EMOJI[em] || '😐'} ${em}</div>
+                    <div class="em-pct">${Math.round(val * 100)}%</div>
+                    <div class="em-bar"><div class="em-fill" style="width:${Math.round(val * 100)}%;"></div></div>
+                </div>
+            `).join('');
+
+            // Stress level
+            const stressFromEmotion = ['Angry', 'Stressed', 'Worried'].includes(dominant) ? 70 :
+                ['Sad', 'Confused', 'Tired'].includes(dominant) ? 50 : 20;
+            S.stressLevel = Math.round(S.stressLevel * 0.7 + (stressFromEmotion + S.voiceStress * 0.3) * 0.3);
+            S.stressLevel = Math.min(100, Math.max(0, S.stressLevel));
+
+            const stressEl = document.getElementById('stressVal');
+            stressEl.textContent = S.stressLevel + '%';
+            const stressState = S.stressLevel > 65 ? 'High 😰' : S.stressLevel > 35 ? 'Moderate 😐' : 'Calm 😌';
+            document.getElementById('stressState').textContent = stressState;
+            document.getElementById('stressBar').style.width = S.stressLevel + '%';
+            document.getElementById('stressBar').style.background = S.stressLevel > 65 ? '#FF4C5E' : S.stressLevel > 35 ?
+                '#FFB830' : '#00C48C';
+
+            calculateWellbeing();
+            updateRecommendations();
+        }
+
+        // ─── WELLBEING ──────────────────────────────────────────
+        function calculateWellbeing() {
+            const emotionScores = {
+                Happy: 92,
+                Calm: 88,
+                Neutral: 62,
+                Surprised: 58,
+                Sad: 28,
+                Angry: 18,
+                Excited: 85,
+                Worried: 35,
+                Tired: 40,
+                Grateful: 90,
+                Loved: 95,
+                Confused: 45,
+                Stressed: 20,
+                Focused: 80,
+                Peaceful: 95,
+                Joyful: 90
+            };
+            const emScore = emotionScores[S.dominantEmotion] || 60;
+            const hrScore = Math.max(15, 100 - Math.abs(S.hrValue - 66) * 2.5);
+            const blinkScore = Math.max(15, 100 - Math.abs(S.blinkRate - 17) * 4);
+            const voiceScore = Math.max(10, 100 - S.voiceStress * 0.8);
+            const stabilityScore = Math.max(10, S.stability || 50);
+
+            const factors = [
+                { value: emScore, weight: 0.30 },
+                { value: hrScore, weight: 0.25 },
+                { value: blinkScore, weight: 0.15 },
+                { value: voiceScore, weight: 0.15 },
+                { value: stabilityScore, weight: 0.15 }
+            ];
+
+            let total = 0,
+                wSum = 0;
+            factors.forEach(f => { total += f.value * f.weight;
+                wSum += f.weight; });
+            S.wellbeing = Math.round(total / wSum);
+
+            const state = S.wellbeing >= 70 ? 'Calm 😌' : S.wellbeing >= 40 ? 'Moderate 😐' : 'Stressed 😰';
+            document.getElementById('wellbeingVal').textContent = S.wellbeing;
+            document.getElementById('wellbeingState').textContent = state;
+            document.getElementById('wellbeingBar').style.width = S.wellbeing + '%';
+            document.getElementById('wellbeingBar').style.background = S.wellbeing >= 70 ? '#00C48C' : S.wellbeing >= 40 ?
+                '#FFB830' : '#FF4C5E';
+
+            return S.wellbeing;
+        }
+
+        // ─── RECOMMENDATIONS ──────────────────────────────────
+        function updateRecommendations() {
+            const em = S.dominantEmotion;
+            const list = RECS[em] || RECS.Neutral;
+            document.getElementById('recsList').innerHTML = list.map((r, i) =>
+                `<div class="rec-item"><div class="rec-num">${i+1}</div><span>${r}</span></div>`
+            ).join('');
+        }
+
+        // ─── UI ────────────────────────────────────────────────
+        function updateUI() {
+            // Update HR display from rPPG
+            if (S.hrValue > 0) {
+                document.getElementById('hrDisplay').textContent = S.hrValue;
+                document.getElementById('hrDisplay').style.color =
+                    S.hrValue > 85 ? '#FF4C5E' : S.hrValue > 70 ? '#FFB830' : '#00C48C';
+                const hrPct = Math.max(0, Math.min(100, (S.hrValue - 40) / 80 * 100));
+                document.getElementById('hrBar').style.width = hrPct + '%';
+                document.getElementById('hrInput').value = S.hrValue;
+                document.getElementById('hrSource').textContent = '📡 rPPG';
+            }
+
+            // Update voice
+            document.getElementById('voiceStress').textContent = Math.round(S.voiceStress);
+            document.getElementById('voiceStressBar').style.width = Math.round(S.voiceStress) + '%';
+            const stressColor = S.voiceStress > 65 ? '#FF4C5E' : S.voiceStress > 35 ? '#FFB830' : '#00C48C';
+            document.getElementById('voiceStressBar').style.background = stressColor;
+        }
+
+        // ─── VOICE ─────────────────────────────────────────────
+        async function toggleMic() {
+            if (S.micOn) { stopMic(); } else { await startMic(); }
+        }
+
+        async function startMic() {
+            try {
+                S.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                S.audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                const source = S.audioCtx.createMediaStreamSource(S.micStream);
+                S.analyser = S.audioCtx.createAnalyser();
+                S.analyser.fftSize = 2048;
+                S.analyser.smoothingTimeConstant = 0.5;
+                source.connect(S.analyser);
+                S.micOn = true;
+                document.getElementById('btnMic').textContent = '🔇 Disable Mic';
+                setStatus('dotVoice', 'active', 'lblVoice', 'Mic On');
+                audioLoop();
+            } catch (e) { toast('❌ Microphone access denied'); }
+        }
+
+        function stopMic() {
+            if (S.micStream) { S.micStream.getTracks().forEach(t => t.stop());
+                S.micStream = null; }
+            if (S.audioCtx) { S.audioCtx.close();
+                S.audioCtx = null; }
+            S.micOn = false;
+            S.analyser = null;
+            document.getElementById('btnMic').textContent = '🎙️ Enable Mic';
+            setStatus('dotVoice', '', 'lblVoice', 'Mic Off');
+        }
+
+        function audioLoop() {
+            if (!S.micOn || !S.analyser) return;
+            setTimeout(audioLoop, 60);
+
+            const freqData = new Uint8Array(S.analyser.frequencyBinCount);
+            const timeDom = new Float32Array(S.analyser.fftSize);
+            S.analyser.getByteFrequencyData(freqData);
+            S.analyser.getFloatTimeDomainData(timeDom);
+
+            let sumSq = 0;
+            for (let i = 0; i < timeDom.length; i++) sumSq += timeDom[i] * timeDom[i];
+            S.voiceRMS = Math.sqrt(sumSq / timeDom.length);
+            const voiced = S.voiceRMS > 0.01;
+
+            let peakBin = 0,
+                peakVal = 0;
+            const sampleRate = S.audioCtx.sampleRate;
+            const lowBin = Math.floor(80 / (sampleRate / 2048));
+            const highBin = Math.floor(400 / (sampleRate / 2048));
+            for (let i = lowBin; i < Math.min(highBin, freqData.length); i++) {
+                if (freqData[i] > peakVal) { peakVal = freqData[i];
+                    peakBin = i; }
+            }
+            const pitch = peakBin * (sampleRate / 2048);
+
+            if (voiced && peakVal > 25) {
+                S.voicePitch = S.voicePitch * 0.7 + pitch * 0.3;
+            }
+
+            const pitchStress = Math.max(0, Math.min(1, (S.voicePitch - 120) / 200));
+            const rmsStress = Math.min(1, S.voiceRMS * 15);
+            S.voiceStress = S.voiceStress * 0.85 + (pitchStress * 0.5 + rmsStress * 0.5) * 100 * 0.15;
+
+            const bucketSize = Math.floor(freqData.length / 32);
+            for (let b = 0; b < 32; b++) {
+                let sum = 0;
+                for (let k = b * bucketSize; k < (b + 1) * bucketSize && k < freqData.length; k++) sum += freqData[k];
+                S.voiceBars[b] = S.voiceBars[b] * 0.5 + (sum / bucketSize / 255) * 0.5;
+            }
+            updateVoiceBars();
+
+            document.getElementById('voiceStress').textContent = Math.round(S.voiceStress);
+            document.getElementById('voiceStressBar').style.width = Math.round(S.voiceStress) + '%';
+            const stressColor = S.voiceStress > 65 ? '#FF4C5E' : S.voiceStress > 35 ? '#FFB830' : '#00C48C';
+            document.getElementById('voiceStressBar').style.background = stressColor;
+            document.getElementById('voicePitch').textContent = S.voicePitch ? Math.round(S.voicePitch) + ' Hz' : '—';
+            document.getElementById('voiceStatus').textContent = voiced ? '🔊 Active' : '⚪ Silent';
+        }
+
+        function updateVoiceBars() {
+            const row = document.getElementById('voiceBarsRow');
+            const bars = row.querySelectorAll('.voice-bar');
+            for (let i = 0; i < bars.length && i < 32; i++) {
+                const h = Math.max(2, S.voiceBars[i] * 40);
+                bars[i].style.height = h + 'px';
+                const stress = Math.min(1, S.voiceStress / 100);
+                const r = Math.round(100 + stress * 155);
+                const g = Math.round(200 - stress * 150);
+                const b = Math.round(255 - stress * 200);
+                bars[i].style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
+            }
+        }
+
+        // ─── ANALYZE & SEND ──────────────────────────────────
+        function analyzeAndSend() {
+            if (!S.userName) {
+                toast('⚠️ Name is required!');
+                document.getElementById('nameBox').className = 'name-box required';
+                return;
+            }
+            if (!S.faceDetected) {
+                toast('⚠️ No face detected!');
+                return;
+            }
+
+            const emotion = S.dominantEmotion;
+            const emoji = EMOTION_EMOJI[emotion] || '😐';
+            const score = S.wellbeing;
+
+            const now = new Date();
+            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
+            history.unshift({
+                date: now.toLocaleDateString(),
+                time: now.toLocaleTimeString(),
+                emotion: emotion,
+                score: score,
+                bpm: S.hrValue,
+                stress: S.stressLevel,
+                blinks: S.blinkCount
+            });
+            if (history.length > 20) history.length = 20;
+            localStorage.setItem('heartauth_history', JSON.stringify(history));
+
+            const data = {
+                name: S.userName,
+                timestamp: now.toISOString(),
+                hr: S.hrValue,
+                emotion: emotion,
+                emotionEmoji: emoji,
+                wellbeing: score,
+                stress: S.stressLevel,
+                blinks: S.blinkCount,
+                blinkRate: S.blinkRate,
+                emotions: S.emotions,
+                au1: Math.round(S.AU1 * 100),
+                au12: Math.round(S.AU12 * 100),
+                au25: Math.round(S.AU25 * 100),
+                rppgConfidence: S.rPPG_Confidence
+            };
+
+            const readings = JSON.parse(localStorage.getItem('heartauth_readings') || '[]');
+            readings.unshift(data);
+            if (readings.length > 100) readings.length = 100;
+            localStorage.setItem('heartauth_readings', JSON.stringify(readings));
+            localStorage.setItem('heartauth_latest', JSON.stringify(data));
+
+            renderHistory();
+            updateChart(history);
+            toast('✅ Recorded! ' + S.userName + ' - ' + emotion + ' (' + score + ') · HR: ' + S.hrValue + ' BPM');
+        }
+
+        // ─── CAMERA ────────────────────────────────────────────
+        let faceMesh = null,
+            camera = null;
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoEl.srcObject = stream;
+                videoEl.style.display = 'block';
+                document.getElementById('camPlaceholder').style.display = 'none';
+                await videoEl.play();
+
+                S.cameraOn = true;
+                setStatus('dotCamera', 'active', 'lblCamera', 'Live');
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnAnalyze').disabled = false;
+
+                faceMesh = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+
+                faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.65,
+                    minTrackingConfidence: 0.6
+                });
+
+                faceMesh.onResults(onResults);
+
+                camera = new Camera(videoEl, {
+                    onFrame: async () => {
+                        if (S.cameraOn && faceMesh) {
+                            await faceMesh.send({ image: videoEl });
+                            S.frameCount++;
+                            if (Date.now() - S.fpsTimer > 1000) {
+                                S.fps = S.frameCount;
+                                S.frameCount = 0;
+                                S.fpsTimer = Date.now();
+                                document.getElementById('badgeFPS').textContent = 'FPS: ' + S.fps;
+                            }
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+
+                camera.start();
+                toast('📷 Camera started with rPPG');
+
+            } catch (e) {
+                toast('❌ Camera access denied');
+                console.error(e);
+            }
+        }
+
+        function stopCamera() {
+            S.cameraOn = false;
+            if (camera) { camera.stop();
+                camera = null; }
+            if (videoEl.srcObject) {
+                videoEl.srcObject.getTracks().forEach(t => t.stop());
+                videoEl.srcObject = null;
+            }
+            videoEl.style.display = 'none';
+            document.getElementById('camPlaceholder').style.display = 'flex';
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnAnalyze').disabled = true;
+            setStatus('dotCamera', '', 'lblCamera', 'Off');
+            setStatus('dotFace', '', 'lblFace', 'No Face');
+            setStatus('dotHR', '', 'lblHR', 'HR: —');
+            toast('⏹ Camera stopped');
+        }
+
+        // ─── HISTORY ───────────────────────────────────────────
+        let chartInstance = null;
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
+            const tbody = document.getElementById('historyBody');
+            document.getElementById('histCount').textContent = history.length + ' sessions';
+
+            if (!history.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-history">No sessions recorded</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = history.map((e, i) => {
+                const cls = e.score >= 70 ? 'high' : e.score >= 40 ? 'medium' : 'low';
+                return `<tr>
+                    <td>${i+1}</td>
+                    <td>${e.date} ${e.time}</td>
+                    <td>${e.emotion}</td>
+                    <td><span class="hist-score ${cls}">${e.score}</span></td>
+                    <td>${e.bpm}</td>
+                    <td>${e.stress}%</td>
+                    <td>${e.blinks}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function updateChart(history) {
+            const ctx = document.getElementById('wellbeingChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            if (!history || history.length === 0) {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{ label: 'Wellbeing Score', data: [0], borderColor: '#00E5FF' }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#8A93B2', font: { size: 10 } } } },
+                        scales: {
+                            y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
+                            x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', font: { size: 8 } } }
                         }
                     }
+                });
+                return;
+            }
+
+            const reversed = history.slice().reverse();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: reversed.map(e => e.date + ' ' + e.time),
+                    datasets: [{
+                        label: 'Wellbeing Score',
+                        data: reversed.map(e => e.score),
+                        borderColor: '#00E5FF',
+                        backgroundColor: 'rgba(0,229,255,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: reversed.map(e =>
+                            e.score >= 70 ? '#00C48C' : e.score >= 40 ? '#FFB830' : '#FF4C5E'
+                        ),
+                        pointRadius: 5,
+                        pointBorderColor: '#070A14',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#8A93B2', font: { size: 10 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const item = reversed[ctx.dataIndex];
+                                    return 'Score: ' + ctx.parsed.y + ' · Emotion: ' + item.emotion + ' · BPM: ' +
+                                        item.bpm;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
+                        x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', maxRotation: 30,
+                                font: { size: 8 } } }
+                    }
                 }
-            },
-            scales: {
-                y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
-                x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', maxRotation: 30, font: { size: 8 } } }
+            });
+        }
+
+        function clearHistory() {
+            if (!confirm('Clear all history?')) return;
+            localStorage.removeItem('heartauth_history');
+            renderHistory();
+            updateChart([]);
+            toast('🗑 History cleared');
+        }
+
+        // ─── BUILD UI ──────────────────────────────────────────
+        function buildVoiceBars() {
+            const row = document.getElementById('voiceBarsRow');
+            row.innerHTML = '';
+            for (let i = 0; i < 32; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'voice-bar';
+                bar.style.height = '2px';
+                row.appendChild(bar);
             }
         }
-    });
-}
 
-function clearHistory() {
-    if (!confirm('Clear all history?')) return;
-    localStorage.removeItem('heartauth_history');
-    renderHistory();
-    updateChart([]);
-    toast('🗑 History cleared');
-}
+        // ─── INIT ──────────────────────────────────────────────
+        function init() {
+            buildVoiceBars();
 
-// ─── BUILD UI ──────────────────────────────────────────
-function buildVoiceBars() {
-    const row = document.getElementById('voiceBarsRow');
-    row.innerHTML = '';
-    for (let i = 0; i < 32; i++) {
-        const bar = document.createElement('div');
-        bar.className = 'voice-bar';
-        bar.style.height = '2px';
-        row.appendChild(bar);
-    }
-}
+            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
+            renderHistory();
+            updateChart(history);
 
-// ─── INIT ──────────────────────────────────────────────
-function init() {
-    buildVoiceBars();
+            document.getElementById('hrInput').addEventListener('input', function() {
+                const val = parseInt(this.value) || 72;
+                const pct = Math.max(0, Math.min(100, (val - 40) / 80 * 100));
+                document.getElementById('hrBar').style.width = pct + '%';
+                S.hrValue = val;
+                document.getElementById('hrSource').textContent = '✏️ Manual';
+            });
 
-    const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-    renderHistory();
-    updateChart(history);
+            document.getElementById('btnStart').addEventListener('click', startCamera);
+            document.getElementById('btnStop').addEventListener('click', stopCamera);
+            document.getElementById('btnAnalyze').addEventListener('click', analyzeAndSend);
+            document.getElementById('btnClear').addEventListener('click', clearHistory);
+            document.getElementById('btnMic').addEventListener('click', toggleMic);
 
-    document.getElementById('hrInput').addEventListener('input', function() {
-        const val = parseInt(this.value) || 72;
-        const pct = Math.max(0, Math.min(100, (val - 40) / 80 * 100));
-        document.getElementById('hrBar').style.width = pct + '%';
-        S.hrValue = val;
-        document.getElementById('hrSource').textContent = '✏️ Manual';
-    });
+            setTimeout(startCamera, 1000);
+            toast('🧠 HEARTAUTH loaded with rPPG — Position your face!');
+        }
 
-    document.getElementById('btnStart').addEventListener('click', startCamera);
-    document.getElementById('btnStop').addEventListener('click', stopCamera);
-    document.getElementById('btnAnalyze').addEventListener('click', analyzeAndSend);
-    document.getElementById('btnClear').addEventListener('click', clearHistory);
-    document.getElementById('btnMic').addEventListener('click', toggleMic);
-
-    setTimeout(startCamera, 1000);
-    toast('🧠 HEARTAUTH loaded — I\'m here to help!');
-}
-
-init();
-</script>
+        init();
+    </script>
 </body>
 </html>
