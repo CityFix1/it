@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>HEARTAUTH · Live rPPG Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1635989241/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1635989241/face_mesh_solution_simd_wasm_bin.js" crossorigin="anonymous"></script>
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
         :root{--bg-base:#070A14;--bg-panel:#0E1322;--bg-card:#141C30;--bg-card2:#1A2340;--border:#2A3455;--cyan:#00E5FF;--cyan-dim:rgba(0,229,255,0.08);--jade:#00C48C;--coral:#FF4C5E;--amber:#FFB830;--purple:#9B6DFF;--text-1:#EDF0F7;--text-2:#8A93B2;--text-3:#555F7A;--font:'Segoe UI',system-ui,sans-serif;--mono:'Consolas','SF Mono',monospace;--radius:12px;--radius-sm:8px}
@@ -620,7 +621,7 @@ async function startCamera(){
         const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480}}});
         videoEl.srcObject=stream;videoEl.style.display='block';document.getElementById('camPlaceholder').style.display='none';await videoEl.play();
         S.cameraOn=true;setStatus('dotCamera','active','lblCamera','Live');document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;document.getElementById('btnAnalyze').disabled=false;
-        faceMesh=new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+        faceMesh=new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1635989241/${f}`});
         faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.65,minTrackingConfidence:0.6});
         faceMesh.onResults(onResults);
         camera=new Camera(videoEl,{onFrame:async()=>{if(S.cameraOn&&faceMesh){await faceMesh.send({image:videoEl});S.frameCount++;if(Date.now()-S.fpsTimer>1000){S.fps=S.frameCount;S.frameCount=0;S.fpsTimer=Date.now();document.getElementById('badgeFPS').textContent='FPS: '+S.fps;}}},width:640,height:480});
