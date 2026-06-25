@@ -359,6 +359,7 @@
 <script>
 // ============================================================
 // HEARTAUTH · LIVE rPPG - Updates Every 0.5 Seconds
+// API: https://heartauth-backend.onrender.com
 // ============================================================
 
 const API_URL = 'https://heartauth-backend.onrender.com';
@@ -376,16 +377,9 @@ const S = {
     emotions: {}, dominantEmotion: 'Neutral', emotionConfidence: 0,
     wellbeing: 50, hrValue: 72, stressLevel: 0, stability: 0,
     frameCount: 0, fps: 0, fpsTimer: 0,
-    // rPPG specific
-    rPPG_Signal: [],
-    rPPG_Timestamps: [],
-    rPPG_Quality: 0,
-    rPPG_LastHR: 72,
-    rPPG_HRHistory: [],
-    tempCanvas: null,
-    tempCtx: null,
-    lastHRUpdate: 0,
-    hrUpdateInterval: 500 // Update every 500ms
+    rPPG_Signal: [], rPPG_Timestamps: [], rPPG_Quality: 0, rPPG_LastHR: 72,
+    tempCanvas: null, tempCtx: null,
+    lastHRUpdate: 0, hrUpdateInterval: 500
 };
 
 const EMOTION_EMOJI = {Happy:'😄',Sad:'😢',Angry:'😠',Surprised:'😲',Calm:'😌',Neutral:'😐',Excited:'🤩',Worried:'😰',Tired:'😴',Grateful:'🙏',Loved:'🥰',Confused:'🤔',Stressed:'😫',Focused:'🧘',Peaceful:'🕊️',Joyful:'🥳'};
@@ -405,18 +399,12 @@ document.getElementById('userNameInput').addEventListener('keypress',function(e)
 if(S.userName){document.getElementById('userNameInput').value=S.userName;updateNameBox();}
 function checkReady(){document.getElementById('btnAnalyze').disabled=!(S.userName&&S.faceDetected);}
 
-// ─── rPPG SIGNAL PROCESSING ──────────────────────────
 function processrPPG(landmarks){
-    // Forehead region for skin sampling
     const forehead = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152];
-    
     if(!S.tempCanvas){S.tempCanvas=document.createElement('canvas');S.tempCanvas.width=160;S.tempCanvas.height=120;S.tempCtx=S.tempCanvas.getContext('2d');}
-    
-    // Sample pixels from video
     S.tempCtx.drawImage(videoEl,0,0,160,120);
     const imgData=S.tempCtx.getImageData(0,0,160,120);
     const data=imgData.data;
-    
     let r=0,g=0,b=0,c=0;
     forehead.forEach(idx=>{
         if(landmarks[idx]){
@@ -428,32 +416,23 @@ function processrPPG(landmarks){
             }
         }
     });
-    
     if(c>10){
-        // Average RGB - use green channel as it's most sensitive to blood flow
         const rAvg=r/c,gAvg=g/c,bAvg=b/c;
-        // Enhanced signal processing - weighted combination
         const signal = (rAvg * 0.3 + gAvg * 0.5 + bAvg * 0.2);
-        
         S.rPPG_Signal.push(signal);
         S.rPPG_Timestamps.push(Date.now());
         if(S.rPPG_Signal.length>200){S.rPPG_Signal.shift();S.rPPG_Timestamps.shift();}
-        
-        // Calculate HR when enough samples - update every 500ms
         if(S.rPPG_Signal.length>60){
             const hr = calculateHR(S.rPPG_Signal);
             if(hr>40&&hr<120){
                 S.rPPG_LastHR = S.rPPG_LastHR * 0.5 + hr * 0.5;
                 S.hrValue = Math.round(S.rPPG_LastHR);
                 S.rPPG_Quality = Math.min(100, Math.round(S.rPPG_Signal.length / 200 * 100));
-                
-                // Update HR display with flash animation
                 const now = Date.now();
                 if(now - S.lastHRUpdate > S.hrUpdateInterval){
                     updateHRDisplay();
                     S.lastHRUpdate = now;
                 }
-                
                 document.getElementById('rppgQuality').textContent = S.rPPG_Quality + '%';
                 document.getElementById('rppgBar').style.width = S.rPPG_Quality + '%';
                 document.getElementById('rppgStatus').textContent = '📡 HR: ' + S.hrValue + ' BPM · Quality: ' + S.rPPG_Quality + '%';
@@ -472,21 +451,13 @@ function processrPPG(landmarks){
 }
 
 function calculateHR(signal){
-    // Detrend signal
     const detrended = detrendSignal(signal);
-    // Find peaks
     const peaks = findPeaks(detrended);
     if(peaks.length < 3) return S.rPPG_LastHR || 72;
-    
     let intervals = [];
-    for(let i=1;i<peaks.length;i++){
-        intervals.push(peaks[i]-peaks[i-1]);
-    }
+    for(let i=1;i<peaks.length;i++){intervals.push(peaks[i]-peaks[i-1]);}
     if(intervals.length===0) return S.rPPG_LastHR || 72;
-    
-    // Average interval in frames
     const avgInterval = intervals.reduce((a,b)=>a+b,0)/intervals.length;
-    // FPS estimation - ~30fps
     const fps = 30;
     const seconds = avgInterval / fps;
     const hr = 60 / seconds;
@@ -494,13 +465,10 @@ function calculateHR(signal){
 }
 
 function detrendSignal(signal){
-    const windowSize=20;
-    const detrended=[];
+    const windowSize=20;const detrended=[];
     for(let i=0;i<signal.length;i++){
         let sum=0,count=0;
-        for(let j=Math.max(0,i-windowSize/2);j<Math.min(signal.length,i+windowSize/2);j++){
-            sum+=signal[j];count++;
-        }
+        for(let j=Math.max(0,i-windowSize/2);j<Math.min(signal.length,i+windowSize/2);j++){sum+=signal[j];count++;}
         const avg=sum/count;
         detrended.push(signal[i]-avg);
     }
@@ -508,14 +476,11 @@ function detrendSignal(signal){
 }
 
 function findPeaks(signal){
-    const peaks=[];
-    const threshold=0.02;
+    const peaks=[];const threshold=0.02;
     for(let i=3;i<signal.length-3;i++){
         if(signal[i]>signal[i-1]&&signal[i]>signal[i-2]&&signal[i]>signal[i-3]&&
            signal[i]>signal[i+1]&&signal[i]>signal[i+2]&&signal[i]>signal[i+3]&&
-           signal[i]>threshold){
-            peaks.push(i);
-        }
+           signal[i]>threshold){peaks.push(i);}
     }
     return peaks;
 }
@@ -524,20 +489,16 @@ function updateHRDisplay(){
     const el = document.getElementById('hrDisplay');
     el.textContent = S.hrValue;
     el.style.color = S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';
-    // Flash animation
     el.classList.remove('bpm-flash');
     void el.offsetWidth;
     el.classList.add('bpm-flash');
-    
     const pct=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));
     document.getElementById('hrBar').style.width = pct + '%';
     document.getElementById('hrStatus').textContent = '❤️ ' + S.hrValue + ' BPM · ' + S.rPPG_Quality + '% quality';
-    // Update pulse ring speed based on HR
     const pulseSpeed = 60 / S.hrValue;
     document.getElementById('pulseRing').style.animationDuration = pulseSpeed + 's';
 }
 
-// ─── MEDIAPIPE ──────────────────────────────────────────
 function onResults(results){
     overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
     if(results.multiFaceLandmarks&&results.multiFaceLandmarks.length>0){
@@ -581,9 +542,7 @@ function analyzeAll(lm){
 
     const nose=lm[1],leE=lm[234],reE=lm[454];if(nose&&leE&&reE){const earMidY=(leE.y+reE.y)/2;S.pitch=Math.max(-30,Math.min(30,(nose.y-earMidY)*100));const earMidX=(leE.x+reE.x)/2;S.yaw=Math.max(-45,Math.min(45,(nose.x-earMidX)*150));const eyL=lm[33],eyR=lm[362];if(eyL&&eyR){S.roll=Math.atan2(eyR.y-eyL.y,eyR.x-eyL.x)*180/Math.PI;}S.headHistory.push({pitch:S.pitch,yaw:S.yaw,roll:S.roll});if(S.headHistory.length>10)S.headHistory.shift();if(S.headHistory.length>5){let v=0;const aP=S.headHistory.reduce((s,h)=>s+h.pitch,0)/S.headHistory.length;const aY=S.headHistory.reduce((s,h)=>s+h.yaw,0)/S.headHistory.length;const aR=S.headHistory.reduce((s,h)=>s+h.roll,0)/S.headHistory.length;S.headHistory.forEach(h=>{v+=Math.pow(h.pitch-aP,2)+Math.pow(h.yaw-aY,2)+Math.pow(h.roll-aR,2);});S.stability=Math.max(0,Math.min(100,100-v*80));}}
 
-    // ─── rPPG PROCESSING ──────────────────────────────
     processrPPG(lm);
-
     updateEmotions();
     updateUI();
 
@@ -626,14 +585,12 @@ function calcWellbeing(){
 function updateRecs(){const list=RECS[S.dominantEmotion]||RECS.Neutral;document.getElementById('recsList').innerHTML=list.map((r,i)=>`<div class="rec-item"><div class="rec-num">${i+1}</div><span>${r}</span></div>`).join('');}
 function updateUI(){}
 
-// ─── VOICE ─────────────────────────────────────────────
 async function toggleMic(){if(S.micOn){stopMic();}else{await startMic();}}
 async function startMic(){try{S.micStream=await navigator.mediaDevices.getUserMedia({audio:true});S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();const source=S.audioCtx.createMediaStreamSource(S.micStream);S.analyser=S.audioCtx.createAnalyser();S.analyser.fftSize=2048;S.analyser.smoothingTimeConstant=0.5;source.connect(S.analyser);S.micOn=true;document.getElementById('btnMic').textContent='🔇 Disable Mic';setStatus('dotVoice','active','lblVoice','Mic On');audioLoop();}catch(e){toast('❌ Microphone access denied');}}
 function stopMic(){if(S.micStream){S.micStream.getTracks().forEach(t=>t.stop());S.micStream=null;}if(S.audioCtx){S.audioCtx.close();S.audioCtx=null;}S.micOn=false;S.analyser=null;document.getElementById('btnMic').textContent='🎙️ Enable Mic';setStatus('dotVoice','','lblVoice','Mic Off');}
 function audioLoop(){if(!S.micOn||!S.analyser)return;setTimeout(audioLoop,60);const fd=new Uint8Array(S.analyser.frequencyBinCount);const td=new Float32Array(S.analyser.fftSize);S.analyser.getByteFrequencyData(fd);S.analyser.getFloatTimeDomainData(td);let sq=0;for(let i=0;i<td.length;i++)sq+=td[i]*td[i];S.voiceRMS=Math.sqrt(sq/td.length);const voiced=S.voiceRMS>0.01;let pb=0,pv=0;const sr=S.audioCtx.sampleRate;const lb=Math.floor(80/(sr/2048));const hb=Math.floor(400/(sr/2048));for(let i=lb;i<Math.min(hb,fd.length);i++){if(fd[i]>pv){pv=fd[i];pb=i;}}const pitch=pb*(sr/2048);if(voiced&&pv>25){S.voicePitch=S.voicePitch*0.7+pitch*0.3;}const ps=Math.max(0,Math.min(1,(S.voicePitch-120)/200));const rs=Math.min(1,S.voiceRMS*15);S.voiceStress=S.voiceStress*0.85+(ps*0.5+rs*0.5)*100*0.15;const bs=Math.floor(fd.length/32);for(let b=0;b<32;b++){let sum=0;for(let k=b*bs;k<(b+1)*bs&&k<fd.length;k++)sum+=fd[k];S.voiceBars[b]=S.voiceBars[b]*0.5+(sum/bs/255)*0.5;}updateVoiceBars();document.getElementById('voiceStress').textContent=Math.round(S.voiceStress);document.getElementById('voiceStressBar').style.width=Math.round(S.voiceStress)+'%';const sc=S.voiceStress>65?'#FF4C5E':S.voiceStress>35?'#FFB830':'#00C48C';document.getElementById('voiceStressBar').style.background=sc;document.getElementById('voicePitch').textContent=S.voicePitch?Math.round(S.voicePitch)+' Hz':'—';document.getElementById('voiceStatus').textContent=voiced?'🔊 Active':'⚪ Silent';}
 function updateVoiceBars(){const row=document.getElementById('voiceBarsRow');const bars=row.querySelectorAll('.voice-bar');for(let i=0;i<bars.length&&i<32;i++){const h=Math.max(2,S.voiceBars[i]*40);bars[i].style.height=h+'px';const s=Math.min(1,S.voiceStress/100);const r=Math.round(100+s*155);const g=Math.round(200-s*150);const b=Math.round(255-s*200);bars[i].style.background='rgb('+r+','+g+','+b+')';}}
 
-// ─── ANALYZE & SEND ──────────────────────────────────
 function analyzeAndSend(){
     if(!S.userName){toast('⚠️ Name is required!');document.getElementById('nameBox').className='name-box required';return;}
     if(!S.faceDetected){toast('⚠️ No face detected!');return;}
@@ -647,7 +604,6 @@ function analyzeAndSend(){
     localStorage.setItem('heartauth_readings',JSON.stringify(readings));
     localStorage.setItem('heartauth_latest',JSON.stringify(data));
     
-    // Send to cloud
     fetch(API_URL + '/api/readings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -658,7 +614,6 @@ function analyzeAndSend(){
     toast('✅ Recorded! '+S.userName+' - '+emotion+' ('+score+') · HR: '+S.hrValue+' BPM');
 }
 
-// ─── CAMERA ────────────────────────────────────────────
 let faceMesh=null,camera=null;
 async function startCamera(){
     try{
@@ -674,7 +629,6 @@ async function startCamera(){
 }
 function stopCamera(){S.cameraOn=false;if(camera){camera.stop();camera=null;}if(videoEl.srcObject){videoEl.srcObject.getTracks().forEach(t=>t.stop());videoEl.srcObject=null;}videoEl.style.display='none';document.getElementById('camPlaceholder').style.display='flex';document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;document.getElementById('btnAnalyze').disabled=true;setStatus('dotCamera','','lblCamera','Off');setStatus('dotFace','','lblFace','No Face');setStatus('dotHR','','lblHR','HR: —');toast('⏹ Camera stopped');}
 
-// ─── HISTORY ───────────────────────────────────────────
 let chartInstance=null;
 function renderHistory(){const h=JSON.parse(localStorage.getItem('heartauth_history')||'[]');const tb=document.getElementById('historyBody');document.getElementById('histCount').textContent=h.length+' sessions';if(!h.length){tb.innerHTML='<tr><td colspan="7" class="empty-history">No sessions recorded</td></tr>';return;}tb.innerHTML=h.map((e,i)=>{const cls=e.score>=70?'high':e.score>=40?'medium':'low';return `<tr><td>${i+1}</td><td>${e.date} ${e.time}</td><td>${e.emotion}</td><td><span class="hist-score ${cls}">${e.score}</span></td><td>${e.bpm}</td><td>${e.stress}%</td><td>${e.blinks}</td></tr>`;}).join('');}
 function updateChart(h){const ctx=document.getElementById('wellbeingChart').getContext('2d');if(chartInstance)chartInstance.destroy();if(!h||h.length===0){chartInstance=new Chart(ctx,{type:'line',data:{labels:['No Data'],datasets:[{label:'Wellbeing Score',data:[0],borderColor:'#00E5FF'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8A93B2',font:{size:10}}}},scales:{y:{min:0,max:100,grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A'}},x:{grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A',font:{size:8}}}}}});return;}const r=h.slice().reverse();chartInstance=new Chart(ctx,{type:'line',data:{labels:r.map(e=>e.date+' '+e.time),datasets:[{label:'Wellbeing Score',data:r.map(e=>e.score),borderColor:'#00E5FF',backgroundColor:'rgba(0,229,255,0.1)',fill:true,tension:0.4,pointBackgroundColor:r.map(e=>e.score>=70?'#00C48C':e.score>=40?'#FFB830':'#FF4C5E'),pointRadius:5,pointBorderColor:'#070A14',pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8A93B2',font:{size:10}}},tooltip:{callbacks:{label:(ctx)=>{const item=r[ctx.dataIndex];return 'Score: '+ctx.parsed.y+' · Emotion: '+item.emotion+' · BPM: '+item.bpm;}}}},scales:{y:{min:0,max:100,grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A'}},x:{grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A',maxRotation:30,font:{size:8}}}}}});}
