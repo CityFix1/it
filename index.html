@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>HEARTAUTH · Live rPPG Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- ✅ WORKING MEDIAPIPE CDN URLs -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1635989241/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
         :root{--bg-base:#070A14;--bg-panel:#0E1322;--bg-card:#141C30;--bg-card2:#1A2340;--border:#2A3455;--cyan:#00E5FF;--cyan-dim:rgba(0,229,255,0.08);--jade:#00C48C;--coral:#FF4C5E;--amber:#FFB830;--purple:#9B6DFF;--text-1:#EDF0F7;--text-2:#8A93B2;--text-3:#555F7A;--font:'Segoe UI',system-ui,sans-serif;--mono:'Consolas','SF Mono',monospace;--radius:12px;--radius-sm:8px}
@@ -144,7 +143,7 @@
             <div class="logo-pulse">🧠</div>
             <div class="logo-text">
                 <h1>HEARTAUTH</h1>
-                <p>Live rPPG · Updates Every 0.5s</p>
+                <p>Live rPPG · Syncs to Phone</p>
             </div>
         </div>
         <div class="creator-badge">
@@ -359,7 +358,7 @@
 
 <script>
 // ============================================================
-// HEARTAUTH · LIVE rPPG - Updates Every 0.5 Seconds
+// HEARTAUTH · LIVE rPPG - Syncs to Phone Dashboard
 // API: https://heartauth-backend.onrender.com
 // ============================================================
 
@@ -402,7 +401,7 @@ function checkReady(){document.getElementById('btnAnalyze').disabled=!(S.userNam
 
 function processrPPG(landmarks){
     const forehead = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152];
-    if(!S.tempCanvas){S.tempCanvas=document.createElement('canvas');S.tempCanvas.width=160;S.tempCanvas.height=120;S.tempCtx=S.tempCanvas.getContext('2d');}
+    if(!S.tempCanvas){S.tempCanvas=document.createElement('canvas');S.tempCanvas.width=160;S.tempCanvas.height=120;S.tempCtx=S.tempCanvas.getContext('2d',{willReadFrequently:true});}
     S.tempCtx.drawImage(videoEl,0,0,160,120);
     const imgData=S.tempCtx.getImageData(0,0,160,120);
     const data=imgData.data;
@@ -605,14 +604,28 @@ function analyzeAndSend(){
     localStorage.setItem('heartauth_readings',JSON.stringify(readings));
     localStorage.setItem('heartauth_latest',JSON.stringify(data));
     
+    // Send to cloud backend - THIS MAKES IT APPEAR ON PHONE!
     fetch(API_URL + '/api/readings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-    }).catch(() => {});
+    })
+    .then(res => res.json())
+    .then(() => {
+        document.getElementById('syncStatus').className = 'sync-status cloud';
+        document.getElementById('syncStatus').textContent = '☁️ Synced to Cloud';
+        setTimeout(() => {
+            document.getElementById('syncStatus').className = 'sync-status local';
+            document.getElementById('syncStatus').textContent = '📡 Local';
+        }, 3000);
+    })
+    .catch(() => {
+        document.getElementById('syncStatus').className = 'sync-status offline';
+        document.getElementById('syncStatus').textContent = '⚠️ Offline';
+    });
     
     renderHistory();updateChart(history);
-    toast('✅ Recorded! '+S.userName+' - '+emotion+' ('+score+') · HR: '+S.hrValue+' BPM');
+    toast('✅ Recorded! '+S.userName+' - '+emotion+' ('+score+') · HR: '+S.hrValue+' BPM · 📱 Sent to Phone!');
 }
 
 let faceMesh=null,camera=null;
@@ -621,7 +634,7 @@ async function startCamera(){
         const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480}}});
         videoEl.srcObject=stream;videoEl.style.display='block';document.getElementById('camPlaceholder').style.display='none';await videoEl.play();
         S.cameraOn=true;setStatus('dotCamera','active','lblCamera','Live');document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;document.getElementById('btnAnalyze').disabled=false;
-        faceMesh=new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+        faceMesh=new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1635989241/${f}`});
         faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.65,minTrackingConfidence:0.6});
         faceMesh.onResults(onResults);
         camera=new Camera(videoEl,{onFrame:async()=>{if(S.cameraOn&&faceMesh){await faceMesh.send({image:videoEl});S.frameCount++;if(Date.now()-S.fpsTimer>1000){S.fps=S.frameCount;S.frameCount=0;S.fpsTimer=Date.now();document.getElementById('badgeFPS').textContent='FPS: '+S.fps;}}},width:640,height:480});
