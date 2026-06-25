@@ -3,2071 +3,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>HEARTAUTH · Advanced Biometrics</title>
+    <title>HEARTAUTH · Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        :root {
-            --bg-base: #070A14;
-            --bg-panel: #0E1322;
-            --bg-card: #141C30;
-            --bg-card2: #1A2340;
-            --border: #2A3455;
-            --cyan: #00E5FF;
-            --cyan-dim: rgba(0, 229, 255, 0.08);
-            --jade: #00C48C;
-            --coral: #FF4C5E;
-            --amber: #FFB830;
-            --purple: #9B6DFF;
-            --pink: #FF6B9D;
-            --text-1: #EDF0F7;
-            --text-2: #8A93B2;
-            --text-3: #555F7A;
-            --font: 'Segoe UI', system-ui, sans-serif;
-            --mono: 'Consolas', 'SF Mono', monospace;
-            --radius: 12px;
-            --radius-sm: 8px;
-        }
-        body {
-            background: var(--bg-base);
-            color: var(--text-1);
-            font-family: var(--font);
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 16px 0 32px;
-        }
-        .wrapper {
-            width: 92%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0 16px;
-            border-bottom: 2px solid var(--border);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .logo-pulse {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--cyan-dim);
-            border: 2px solid var(--cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            animation: logoPulse 2s ease-in-out infinite;
-            flex-shrink: 0;
-        }
-        @keyframes logoPulse {
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.3);
-            }
-            50% {
-                box-shadow: 0 0 0 14px rgba(0, 229, 255, 0);
-            }
-        }
-        .logo-text h1 {
-            font-size: 26px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #fff, var(--cyan), var(--purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .logo-text p {
-            font-size: 10px;
-            color: var(--text-3);
-            text-transform: uppercase;
-        }
-        .creator-badge {
-            font-size: 12px;
-            color: var(--text-2);
-            text-align: right;
-            line-height: 1.5;
-        }
-        .creator-badge strong {
-            color: var(--cyan);
-        }
-        .creator-badge .grade {
-            color: var(--purple);
-        }
-        .creator-badge .school {
-            color: var(--amber);
-        }
-
-        .name-box {
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            margin: 12px 0 8px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            transition: border-color 0.3s;
-        }
-        .name-box.required {
-            border-color: var(--coral);
-        }
-        .name-box.valid {
-            border-color: var(--jade);
-        }
-        .name-box label {
-            font-size: 11px;
-            color: var(--text-2);
-            font-weight: 600;
-        }
-        .name-box input {
-            flex: 1;
-            min-width: 120px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg-base);
-            color: var(--text-1);
-            font-size: 13px;
-            outline: none;
-        }
-        .name-box input:focus {
-            border-color: var(--cyan);
-        }
-        .name-box .btn {
-            padding: 8px 18px;
-            border: none;
-            border-radius: 6px;
-            background: linear-gradient(135deg, #00C5DC, #00E5FF);
-            color: #060A14;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            font-family: var(--font);
-            transition: all 0.2s;
-        }
-        .name-box .btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
-        }
-
-        .status-bar {
-            display: flex;
-            gap: 8px;
-            margin: 8px 0;
-            flex-wrap: wrap;
-        }
-        .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 11px;
-            color: var(--text-2);
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-3);
-            flex-shrink: 0;
-            transition: background 0.3s;
-        }
-        .status-dot.active {
-            background: var(--jade);
-            box-shadow: 0 0 6px var(--jade);
-            animation: blink 1.5s infinite;
-        }
-        .status-dot.error {
-            background: var(--coral);
-        }
-        @keyframes blink {
-            0%,
-            100% {
-                opacity: 1
-            }
-            50% {
-                opacity: 0.4
-            }
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 8px;
-            margin: 4px 0 14px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 9px 20px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: var(--font);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #00C5DC, #00E5FF);
-            color: #060A14;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3);
-        }
-        .btn-danger {
-            background: rgba(255, 76, 94, 0.15);
-            color: var(--coral);
-            border-color: var(--coral);
-        }
-        .btn-danger:hover {
-            background: rgba(255, 76, 94, 0.25);
-        }
-        .btn-success {
-            background: rgba(0, 196, 140, 0.15);
-            color: var(--jade);
-            border-color: var(--jade);
-        }
-        .btn-success:hover {
-            background: rgba(0, 196, 140, 0.25);
-        }
-        .btn-ghost {
-            background: var(--bg-card);
-            color: var(--text-2);
-            border-color: var(--border);
-        }
-        .btn-ghost:hover {
-            border-color: var(--text-2);
-            color: var(--text-1);
-        }
-        .btn:disabled {
-            opacity: 0.38;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-        @media (max-width: 900px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .camera-panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-        .camera-inner {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: #070A10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        #videoEl {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-            display: none;
-        }
-        #overlayCanvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        .camera-placeholder {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: var(--text-3);
-            font-size: 13px;
-        }
-        .camera-placeholder .cam-icon {
-            font-size: 40px;
-            opacity: 0.3;
-        }
-        .camera-info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-top: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-        .camera-badge {
-            font-size: 10px;
-            font-family: var(--mono);
-            padding: 2px 8px;
-            border-radius: 4px;
-            background: var(--bg-card2);
-            color: var(--text-2);
-        }
-        .camera-badge.good {
-            background: rgba(0, 196, 140, 0.15);
-            color: var(--jade);
-        }
-        .camera-badge.bad {
-            background: rgba(255, 76, 94, 0.15);
-            color: var(--coral);
-        }
-
-        .metrics-panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            display: flex;
-            flex-direction: column;
-        }
-        .section-title {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--text-3);
-            padding: 8px 14px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .metrics-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 520px;
-        }
-        .metrics-scroll::-webkit-scrollbar {
-            width: 3px;
-        }
-        .metrics-scroll::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 2px;
-        }
-        .metric-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 12px;
-        }
-        .metric-label {
-            font-size: 9px;
-            color: var(--text-3);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-        .metric-value {
-            font-size: 18px;
-            font-weight: 700;
-            font-family: var(--mono);
-            color: var(--text-1);
-        }
-        .metric-sub {
-            font-size: 10px;
-            color: var(--text-3);
-            margin-top: 2px;
-        }
-        .progress-track {
-            height: 4px;
-            background: var(--bg-base);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.5s ease;
-        }
-
-        .emotion-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 4px;
-            margin-top: 4px;
-        }
-        .emotion-item {
-            background: var(--bg-card2);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 4px 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            transition: border-color 0.3s;
-        }
-        .emotion-item.active {
-            border-color: var(--cyan);
-            background: var(--cyan-dim);
-        }
-        .emotion-item .em-name {
-            font-size: 8px;
-            color: var(--text-3);
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .emotion-item .em-pct {
-            font-size: 11px;
-            font-weight: 700;
-            font-family: var(--mono);
-            color: var(--text-1);
-        }
-        .emotion-item .em-bar {
-            height: 2px;
-            background: var(--bg-base);
-            border-radius: 1px;
-            overflow: hidden;
-        }
-        .emotion-item .em-fill {
-            height: 100%;
-            border-radius: 1px;
-            background: var(--cyan);
-            transition: width 0.5s;
-        }
-
-        .emotion-display {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-align: center;
-            border: 1px solid var(--border);
-            margin-bottom: 8px;
-            transition: all 0.3s;
-        }
-        .emotion-display .big-emoji {
-            font-size: 56px;
-            display: block;
-            margin-bottom: 2px;
-            transition: all 0.3s;
-        }
-        .emotion-display .emotion-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-1);
-            transition: all 0.3s;
-        }
-        .emotion-display .emotion-desc {
-            font-size: 12px;
-            color: var(--text-2);
-            margin-top: 2px;
-            transition: all 0.3s;
-        }
-        .emotion-display .confidence {
-            font-size: 10px;
-            color: var(--text-3);
-            margin-top: 4px;
-        }
-
-        .bottom-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 14px;
-            margin-top: 14px;
-        }
-        @media (max-width: 900px) {
-            .bottom-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .sub-panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-
-        .voice-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 36px;
-            padding: 4px 12px 0;
-        }
-        .voice-bar {
-            flex: 1;
-            background: var(--cyan);
-            border-radius: 2px 2px 0 0;
-            min-height: 2px;
-            transition: height 0.08s ease;
-        }
-
-        .recs-list {
-            padding: 8px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 160px;
-            overflow-y: auto;
-        }
-        .rec-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            background: var(--bg-card2);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 11px;
-            color: var(--text-2);
-        }
-        .rec-num {
-            background: var(--cyan-dim);
-            color: var(--cyan);
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 700;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .history-section {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            margin-top: 14px;
-        }
-        .chart-container {
-            padding: 12px 14px;
-            background: var(--bg-card);
-            border-radius: 8px;
-            margin: 8px 12px;
-        }
-        .chart-container canvas {
-            width: 100% !important;
-            height: 180px !important;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th,
-            {
-            padding: 6px 10px;
-            text-align: left;
-            font-size: 11px;
-            border-bottom: 1px solid var(--border);
-        }
-        th {
-            color: var(--text-3);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 9px;
-        }
-        td {
-            color: var(--text-2);
-        }
-        .hist-score {
-            font-family: var(--mono);
-            font-weight: 700;
-        }
-        .hist-score.high {
-            color: var(--jade);
-        }
-        .hist-score.medium {
-            color: var(--amber);
-        }
-        .hist-score.low {
-            color: var(--coral);
-        }
-        .empty-history {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-3);
-            font-size: 11px;
-        }
-
-        .rppg-explanation {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            margin-top: 20px;
-            padding: 20px 24px;
-            border-left: 4px solid var(--cyan);
-        }
-        .rppg-explanation h2 {
-            font-size: 18px;
-            color: var(--cyan);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .rppg-explanation h3 {
-            font-size: 14px;
-            color: var(--text-1);
-            margin: 16px 0 8px;
-        }
-        .rppg-explanation p {
-            color: var(--text-2);
-            font-size: 13px;
-            line-height: 1.8;
-            margin-bottom: 10px;
-        }
-        .rppg-explanation .highlight {
-            color: var(--cyan);
-            font-weight: 600;
-        }
-        .rppg-explanation .step {
-            background: var(--bg-card);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            border-left: 3px solid var(--cyan);
-        }
-        .rppg-explanation .step strong {
-            color: var(--cyan);
-        }
-        .rppg-explanation .diagram {
-            background: var(--bg-card);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 12px 0;
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--text-2);
-            text-align: center;
-            border: 1px solid var(--border);
-            line-height: 2;
-        }
-
-        .disclaimer-box {
-            margin-top: 20px;
-            padding: 16px 20px;
-            background: rgba(255, 76, 94, 0.06);
-            border: 1px solid rgba(255, 76, 94, 0.2);
-            border-radius: 8px;
-            color: var(--text-2);
-            font-size: 11px;
-            line-height: 1.7;
-        }
-        .disclaimer-box strong {
-            color: var(--coral);
-        }
-
-        .footer {
-            margin-top: 24px;
-            padding-top: 14px;
-            border-top: 2px solid var(--border);
-            text-align: center;
-            color: var(--text-3);
-            font-size: 12px;
-            line-height: 1.8;
-        }
-        .footer .name {
-            color: var(--text-1);
-            font-weight: 700;
-        }
-        .footer .grade {
-            color: var(--purple);
-        }
-        .footer .school {
-            color: var(--amber);
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: var(--bg-card2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 18px;
-            font-size: 12px;
-            color: var(--text-1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-            transition: transform 0.3s ease;
-            z-index: 999;
-            white-space: nowrap;
-        }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        @media (max-width: 600px) {
-            .logo-text h1 {
-                font-size: 18px;
-            }
-            .btn {
-                font-size: 10px;
-                padding: 7px 14px;
-            }
-        }
-
-        /* Live pulse animation for HR */
-        .pulse-ring {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--cyan);
-            animation: pulse-ring 1.5s ease-in-out infinite;
-            margin-right: 8px;
-        }
-        @keyframes pulse-ring {
-            0% {
-                transform: scale(0.8);
-                opacity: 0.7;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0.8);
-                opacity: 0.7;
-            }
-        }
-        .hr-live {
-            display: flex;
-            align-items: center;
-        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{--bg-base:#070A14;--bg-panel:#0E1322;--bg-card:#141C30;--bg-card2:#1A2340;--border:#2A3455;--cyan:#00E5FF;--cyan-dim:rgba(0,229,255,0.08);--jade:#00C48C;--coral:#FF4C5E;--amber:#FFB830;--purple:#9B6DFF;--text-1:#EDF0F7;--text-2:#8A93B2;--text-3:#555F7A;--font:'Segoe UI',system-ui,sans-serif;--mono:'Consolas','SF Mono',monospace;--radius:12px;--radius-sm:8px}
+        body{background:var(--bg-base);color:var(--text-1);font-family:var(--font);font-size:14px;line-height:1.6;min-height:100vh;padding:16px 0 32px}
+        .wrapper{width:92%;max-width:1400px;margin:0 auto}
+        .header{display:flex;align-items:center;justify-content:space-between;padding:12px 0 16px;border-bottom:2px solid var(--border);flex-wrap:wrap;gap:10px}
+        .logo-area{display:flex;align-items:center;gap:12px}
+        .logo-pulse{width:44px;height:44px;border-radius:50%;background:var(--cyan-dim);border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:20px;animation:logoPulse 2s ease-in-out infinite;flex-shrink:0}
+        @keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0.3)}50%{box-shadow:0 0 0 14px rgba(0,229,255,0)}}
+        .logo-text h1{font-size:26px;font-weight:800;background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .logo-text p{font-size:10px;color:var(--text-3);text-transform:uppercase}
+        .creator-badge{font-size:12px;color:var(--text-2);text-align:right;line-height:1.5}
+        .creator-badge strong{color:var(--cyan)}
+        .creator-badge .grade{color:var(--purple)}
+        .creator-badge .school{color:var(--amber)}
+        .name-box{background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin:12px 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;transition:border-color 0.3s}
+        .name-box.required{border-color:var(--coral)}
+        .name-box.valid{border-color:var(--jade)}
+        .name-box label{font-size:11px;color:var(--text-2);font-weight:600}
+        .name-box input{flex:1;min-width:120px;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-base);color:var(--text-1);font-size:13px;outline:none}
+        .name-box input:focus{border-color:var(--cyan)}
+        .name-box .btn{padding:8px 18px;border:none;border-radius:6px;background:linear-gradient(135deg,#00C5DC,#00E5FF);color:#060A14;font-weight:700;font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+        .name-box .btn:hover{transform:scale(1.02);box-shadow:0 4px 15px rgba(0,229,255,0.3)}
+        .status-bar{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+        .status-pill{display:flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--text-2)}
+        .status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-3);flex-shrink:0;transition:background 0.3s}
+        .status-dot.active{background:var(--jade);box-shadow:0 0 6px var(--jade);animation:blink 1.5s infinite}
+        .status-dot.error{background:var(--coral)}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+        .btn-row{display:flex;gap:8px;margin:4px 0 14px;flex-wrap:wrap}
+        .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;border:1px solid transparent;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:var(--font)}
+        .btn-primary{background:linear-gradient(135deg,#00C5DC,#00E5FF);color:#060A14}
+        .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,229,255,0.3)}
+        .btn-danger{background:rgba(255,76,94,0.15);color:var(--coral);border-color:var(--coral)}
+        .btn-danger:hover{background:rgba(255,76,94,0.25)}
+        .btn-success{background:rgba(0,196,140,0.15);color:var(--jade);border-color:var(--jade)}
+        .btn-success:hover{background:rgba(0,196,140,0.25)}
+        .btn-ghost{background:var(--bg-card);color:var(--text-2);border-color:var(--border)}
+        .btn-ghost:hover{border-color:var(--text-2);color:var(--text-1)}
+        .btn:disabled{opacity:0.38;cursor:not-allowed;transform:none!important}
+        .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+        @media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+        .camera-panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+        .camera-inner{position:relative;width:100%;aspect-ratio:4/3;background:#070A10;display:flex;align-items:center;justify-content:center;overflow:hidden}
+        #videoEl{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none}
+        #overlayCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+        .camera-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-3);font-size:13px}
+        .camera-placeholder .cam-icon{font-size:40px;opacity:0.3}
+        .camera-info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);flex-wrap:wrap;gap:4px}
+        .camera-badge{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:var(--bg-card2);color:var(--text-2)}
+        .camera-badge.good{background:rgba(0,196,140,0.15);color:var(--jade)}
+        .camera-badge.bad{background:rgba(255,76,94,0.15);color:var(--coral)}
+        .metrics-panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column}
+        .section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+        .metrics-scroll{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;max-height:520px}
+        .metrics-scroll::-webkit-scrollbar{width:3px}
+        .metrics-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        .metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 12px}
+        .metric-label{font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+        .metric-value{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text-1)}
+        .metric-sub{font-size:10px;color:var(--text-3);margin-top:2px}
+        .progress-track{height:4px;background:var(--bg-base);border-radius:2px;overflow:hidden;margin-top:4px}
+        .progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
+        .emotion-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px}
+        .emotion-item{background:var(--bg-card2);border:1px solid var(--border);border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;gap:1px;transition:border-color 0.3s}
+        .emotion-item.active{border-color:var(--cyan);background:var(--cyan-dim)}
+        .emotion-item .em-name{font-size:8px;color:var(--text-3);font-weight:600;text-transform:uppercase}
+        .emotion-item .em-pct{font-size:11px;font-weight:700;font-family:var(--mono);color:var(--text-1)}
+        .emotion-item .em-bar{height:2px;background:var(--bg-base);border-radius:1px;overflow:hidden}
+        .emotion-item .em-fill{height:100%;border-radius:1px;background:var(--cyan);transition:width 0.5s}
+        .emotion-display{background:var(--bg-card);border-radius:12px;padding:12px 16px;text-align:center;border:1px solid var(--border);margin-bottom:8px}
+        .emotion-display .big-emoji{font-size:56px;display:block;margin-bottom:2px;transition:all 0.5s}
+        .emotion-display .emotion-name{font-size:20px;font-weight:700;color:var(--text-1)}
+        .emotion-display .emotion-desc{font-size:12px;color:var(--text-2);margin-top:2px}
+        .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}
+        @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+        .sub-panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius)}
+        .voice-bars{display:flex;align-items:flex-end;gap:2px;height:36px;padding:4px 12px 0}
+        .voice-bar{flex:1;background:var(--cyan);border-radius:2px 2px 0 0;min-height:2px;transition:height 0.08s ease}
+        .hr-input{background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:4px 8px;width:70px;font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text-1)}
+        .hr-input:focus{outline:1px solid var(--cyan)}
+        .recs-list{padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+        .rec-item{display:flex;align-items:flex-start;gap:8px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text-2)}
+        .rec-num{background:var(--cyan-dim);color:var(--cyan);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+        .history-section{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);margin-top:14px}
+        .chart-container{padding:12px 14px;background:var(--bg-card);border-radius:8px;margin:8px 12px}
+        .chart-container canvas{width:100%!important;height:180px!important}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:6px 10px;text-align:left;font-size:11px;border-bottom:1px solid var(--border)}
+        th{color:var(--text-3);font-weight:600;text-transform:uppercase;font-size:9px}
+        td{color:var(--text-2)}
+        .hist-score{font-family:var(--mono);font-weight:700}
+        .hist-score.high{color:var(--jade)}
+        .hist-score.medium{color:var(--amber)}
+        .hist-score.low{color:var(--coral)}
+        .empty-history{text-align:center;padding:20px;color:var(--text-3);font-size:11px}
+        .rppg-explanation{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);margin-top:20px;padding:20px 24px;border-left:4px solid var(--cyan)}
+        .rppg-explanation h2{font-size:18px;color:var(--cyan);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+        .rppg-explanation h3{font-size:14px;color:var(--text-1);margin:16px 0 8px}
+        .rppg-explanation p{color:var(--text-2);font-size:13px;line-height:1.8;margin-bottom:10px}
+        .rppg-explanation .highlight{color:var(--cyan);font-weight:600}
+        .rppg-explanation .step{background:var(--bg-card);border-radius:8px;padding:12px 16px;margin:8px 0;border-left:3px solid var(--cyan)}
+        .rppg-explanation .step strong{color:var(--cyan)}
+        .rppg-explanation .diagram{background:var(--bg-card);border-radius:8px;padding:16px;margin:12px 0;font-family:var(--mono);font-size:12px;color:var(--text-2);text-align:center;border:1px solid var(--border);line-height:2}
+        .disclaimer-box{margin-top:20px;padding:16px 20px;background:rgba(255,76,94,0.06);border:1px solid rgba(255,76,94,0.2);border-radius:8px;color:var(--text-2);font-size:11px;line-height:1.7}
+        .disclaimer-box strong{color:var(--coral)}
+        .footer{margin-top:24px;padding-top:14px;border-top:2px solid var(--border);text-align:center;color:var(--text-3);font-size:12px;line-height:1.8}
+        .footer .name{color:var(--text-1);font-weight:700}
+        .footer .grade{color:var(--purple)}
+        .footer .school{color:var(--amber)}
+        .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:8px 18px;font-size:12px;color:var(--text-1);box-shadow:0 8px 32px rgba(0,0,0,0.6);transition:transform 0.3s ease;z-index:999;white-space:nowrap}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+        @media(max-width:600px){.logo-text h1{font-size:18px}.btn{font-size:10px;padding:7px 14px}.rppg-explanation{padding:14px 16px}}
+        .pulse-ring{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--cyan);animation:pulse-ring 1.5s ease-in-out infinite;margin-right:8px}
+        @keyframes pulse-ring{0%{transform:scale(0.8);opacity:0.7}50%{transform:scale(1.2);opacity:1}100%{transform:scale(0.8);opacity:0.7}}
+        .hr-live{display:flex;align-items:center}
     </style>
 </head>
 <body>
-
-    <div class="wrapper">
-        <header class="header">
-            <div class="logo-area">
-                <div class="logo-pulse">🧠</div>
-                <div class="logo-text">
-                    <h1>HEARTAUTH</h1>
-                    <p>Advanced Biometrics · Real-Time</p>
-                </div>
-            </div>
-            <div class="creator-badge">
-                <strong>Hammad Sayed</strong><br>
-                <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
-            </div>
-        </header>
-
-        <!-- Name Input -->
-        <div class="name-box required" id="nameBox">
-            <label>👤 Your Name <span style="color:var(--coral);">*</span></label>
-            <input type="text" id="userNameInput" placeholder="Enter your name" maxlength="30">
-            <button class="btn" id="setNameBtn">Set Name</button>
-        </div>
-
-        <div class="status-bar">
-            <div class="status-pill"><div class="status-dot" id="dotCamera"></div><span id="lblCamera">Off</span></div>
-            <div class="status-pill"><div class="status-dot" id="dotFace"></div><span id="lblFace">No Face</span></div>
-            <div class="status-pill"><div class="status-dot" id="dotVoice"></div><span id="lblVoice">Mic Off</span></div>
-            <div class="status-pill"><div class="status-dot" id="dotHR"></div><span id="lblHR">HR: —</span></div>
-        </div>
-
-        <div class="btn-row">
-            <button class="btn btn-primary" id="btnStart">▶ Start Camera</button>
-            <button class="btn btn-danger" id="btnStop" disabled>⏹ Stop</button>
-            <button class="btn btn-success" id="btnAnalyze" disabled>📊 Record & Send</button>
-            <button class="btn btn-ghost" id="btnClear">🗑 Clear History</button>
-        </div>
-
-        <div class="main-grid">
-            <div class="camera-panel">
-                <div class="section-title">🎥 Live Camera</div>
-                <div class="camera-inner">
-                    <div class="camera-placeholder" id="camPlaceholder">
-                        <div class="cam-icon">📷</div>
-                        <div>Press "Start Camera"</div>
-                    </div>
-                    <video id="videoEl" autoplay playsinline muted></video>
-                    <canvas id="overlayCanvas"></canvas>
-                </div>
-                <div class="camera-info-row">
-                    <span class="camera-badge" id="badgeFPS">FPS: —</span>
-                    <span class="camera-badge" id="badgeFaceQ">Quality: —</span>
-                    <span class="camera-badge" id="badgeFaceStatus">No Face</span>
-                    <span class="camera-badge" id="badgeBlinks">Blinks: 0</span>
-                </div>
-            </div>
-
-            <div class="metrics-panel">
-                <div class="section-title">📡 Live Biometric Data</div>
-                <div class="metrics-scroll">
-                    <!-- Big Emotion Display - Updates LIVE with expressions -->
-                    <div class="emotion-display" id="emotionDisplay">
-                        <span class="big-emoji" id="bigEmoji">😐</span>
-                        <div class="emotion-name" id="emotionName">Neutral</div>
-                        <div class="emotion-desc" id="emotionDesc">You seem balanced and calm right now.</div>
-                        <div class="confidence" id="emotionConf">Confidence: 0%</div>
-                    </div>
-
-                    <!-- Heart Rate - LIVE -->
-                    <div class="metric-card" style="border:2px solid var(--cyan);">
-                        <div class="metric-header">
-                            <div class="metric-label">❤️ Heart Rate <span style="color:var(--cyan);">(Live)</span></div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                            <div>
-                                <div class="hr-live">
-                                    <span class="pulse-ring" id="pulseRing"></span>
-                                    <div class="metric-value" id="hrDisplay" style="font-size:32px;color:var(--cyan);">--</div>
-                                </div>
-                                <div class="metric-sub" id="hrStatus">Waiting for face...</div>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="progress-track" style="height:8px;">
-                                    <div class="progress-fill" id="hrBar" style="width:0%;background:var(--cyan);"></div>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-3);margin-top:2px;">
-                                    <span>40</span><span>72</span><span>100</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-header"><div class="metric-label">🌟 Wellbeing Score</div></div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                            <div>
-                                <div class="metric-value" id="wellbeingVal">—</div>
-                                <div class="metric-sub" id="wellbeingState">Start camera</div>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="progress-track">
-                                    <div class="progress-fill" id="wellbeingBar" style="width:0%;background:var(--jade);"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-header"><div class="metric-label">😰 Stress Level</div></div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                            <div>
-                                <div class="metric-value" id="stressVal">0%</div>
-                                <div class="metric-sub" id="stressState">Calm</div>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="progress-track">
-                                    <div class="progress-fill" id="stressBar" style="width:0%;background:var(--jade);"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-header"><div class="metric-label">👁️ Blink Rate</div></div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
-                            <div>
-                                <div class="metric-value" id="blinkCount">0</div>
-                                <div class="metric-sub" id="blinkRate">0 blinks/min</div>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="progress-track"><div class="progress-fill" id="blinkBar" style="width:0%;background:var(--purple);"></div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-label">🎭 Emotion Breakdown</div>
-                        <div class="emotion-grid" id="emotionGrid"></div>
-                    </div>
-                </div>
+<div class="wrapper">
+    <header class="header">
+        <div class="logo-area">
+            <div class="logo-pulse">🧠</div>
+            <div class="logo-text">
+                <h1>HEARTAUTH</h1>
+                <p>Smart Biometric Scanner</p>
             </div>
         </div>
-
-        <div class="bottom-grid">
-            <div class="sub-panel">
-                <div class="section-title">🎙️ Voice Analysis</div>
-                <div class="voice-bars" id="voiceBarsRow"></div>
-                <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                    <div class="metric-card" style="padding:6px 8px;">
-                        <div class="metric-label">Stress</div>
-                        <div class="metric-value" id="voiceStress">—</div>
-                        <div class="progress-track"><div class="progress-fill" id="voiceStressBar" style="width:0%;background:var(--coral);"></div></div>
-                    </div>
-                    <div class="metric-card" style="padding:6px 8px;">
-                        <div class="metric-label">Pitch</div>
-                        <div class="metric-value" id="voicePitch" style="font-size:16px;">— Hz</div>
-                        <div class="metric-sub" id="voiceStatus">Silent</div>
-                    </div>
-                </div>
-                <div style="padding:0 12px 8px;">
-                    <button class="btn btn-ghost" style="width:100%;font-size:11px;" id="btnMic">🎙️ Enable Microphone</button>
-                </div>
-            </div>
-
-            <div class="sub-panel">
-                <div class="section-title">💡 Personalized Tips</div>
-                <div class="recs-list" id="recsList">
-                    <div style="color:var(--text-3);font-size:11px;padding:6px 0;">Start camera to get personalized help</div>
-                </div>
-            </div>
-
-            <div class="sub-panel">
-                <div class="section-title">📊 Face Metrics</div>
-                <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                    <div><span style="font-size:9px;color:var(--text-3);">Symmetry</span><br><span id="faceSym" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                    <div><span style="font-size:9px;color:var(--text-3);">Confidence</span><br><span id="faceConf" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                    <div><span style="font-size:9px;color:var(--text-3);">Face Size</span><br><span id="faceSize" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                    <div><span style="font-size:9px;color:var(--text-3);">Stability</span><br><span id="faceStability" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
-                </div>
-            </div>
+        <div class="creator-badge">
+            <strong>Hammad Sayed</strong><br>
+            <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
         </div>
+    </header>
 
-        <div class="history-section">
-            <div class="section-title" style="justify-content:space-between;">
-                <span>📋 Your History</span>
-                <span id="histCount" style="font-size:10px;">0 sessions</span>
-            </div>
-            <div class="chart-container">
-                <canvas id="wellbeingChart"></canvas>
-            </div>
-            <table>
-                <thead><tr><th>#</th><th>Date</th><th>Emotion</th><th>Score</th><th>BPM</th><th>Stress</th><th>Blinks</th></tr></thead>
-                <tbody id="historyBody"><tr><td colspan="7" class="empty-history">No sessions recorded yet</td></tr></tbody>
-            </table>
-        </div>
-
-        <!-- rPPG Explanation -->
-        <div class="rppg-explanation">
-            <h2>🫀 How rPPG Works</h2>
-            <p><span class="highlight">rPPG (remote Photoplethysmography)</span> measures heart rate by analyzing <span class="highlight">subtle color changes in skin</span> caused by blood flow.</p>
-            <div class="step"><strong>1. 📷 Camera captures your face</strong> — forehead/cheek region</div>
-            <div class="step"><strong>2. 🎨 Extract RGB color signal</strong> — average color values per frame</div>
-            <div class="step"><strong>3. ❤️ Blood volume pulse</strong> — heart contracts → skin gets redder</div>
-            <div class="step"><strong>4. 📊 Signal processing</strong> — filter noise, find dominant frequency</div>
-            <div class="step"><strong>5. 🔢 Calculate BPM</strong> — frequency × 60 = heart rate</div>
-            <div class="diagram">📷 Camera → 👤 Face → 🎨 RGB → 📊 Filter → 🔢 Frequency → ❤️ <strong style="color:var(--cyan);">72 BPM</strong></div>
-        </div>
-
-        <div class="disclaimer-box">
-            <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes. Not a medical device.
-        </div>
-
-        <footer class="footer">
-            <span class="name">Hammad Sayed</span> · <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
-        </footer>
+    <div class="name-box required" id="nameBox">
+        <label>👤 Your Name <span style="color:var(--coral);">*</span></label>
+        <input type="text" id="userNameInput" placeholder="Enter your name" maxlength="30">
+        <button class="btn" id="setNameBtn">Set Name</button>
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <script>
-        // ============================================================
-        // HEARTAUTH · COMPLETE WORKING SYSTEM
-        // Live emotion detection + rPPG heart rate
-        // ============================================================
-
-        const S = {
-            cameraOn: false,
-            micOn: false,
-            faceDetected: false,
-            landmarks: null,
-            userName: localStorage.getItem('heartauth_user') || '',
-
-            // Eye metrics
-            leftEAR: 0,
-            rightEAR: 0,
-            earHistory: [],
-            blinkCount: 0,
-            blinkHistory: [],
-            blinkRate: 0,
-            lastBlinkTime: 0,
-            adaptiveThreshold: 0.2,
-
-            // Mouth
-            mouthMAR: 0,
-            mouthOpenness: 0,
-
-            // Action Units
-            AU1: 0,
-            AU12: 0,
-            AU25: 0,
-
-            // Head pose
-            pitch: 0,
-            yaw: 0,
-            roll: 0,
-            headHistory: [],
-
-            // Voice
-            voiceStress: 0,
-            voicePitch: 0,
-            voiceRMS: 0,
-            voiceBars: new Array(32).fill(0),
-            audioCtx: null,
-            analyser: null,
-            micStream: null,
-
-            // Emotions - LIVE UPDATING
-            emotions: {},
-            dominantEmotion: 'Neutral',
-            emotionConfidence: 0,
-
-            // Wellbeing
-            wellbeing: 50,
-            stressLevel: 0,
-
-            // Tracking
-            fps: 0,
-            frameCount: 0,
-            fpsTimer: 0,
-            stability: 0,
-
-            // rPPG Heart Rate - LIVE
-            hrValue: 72,
-            hrRaw: [],
-            hrSignal: [],
-            hrConfidence: 0,
-            lastHRUpdate: 0,
-
-            // Canvas for rPPG sampling
-            tempCanvas: null,
-            tempCtx: null
-        };
-
-        const EMOTION_EMOJI = {
-            Happy: '😄',
-            Sad: '😢',
-            Angry: '😠',
-            Surprised: '😲',
-            Calm: '😌',
-            Neutral: '😐',
-            Excited: '🤩',
-            Worried: '😰',
-            Tired: '😴',
-            Grateful: '🙏',
-            Loved: '🥰',
-            Confused: '🤔',
-            Stressed: '😫',
-            Focused: '🧘',
-            Peaceful: '🕊️',
-            Joyful: '🥳'
-        };
-
-        const EMOTION_DESCRIPTIONS = {
-            Happy: "You're feeling positive and joyful! 🌟",
-            Sad: "You're feeling down. Be gentle with yourself. 💙",
-            Angry: "You're feeling frustrated. Take a moment to breathe. 🌬️",
-            Surprised: "Something caught you off guard! 😲",
-            Calm: "You're in a peaceful, centered state. 🧘",
-            Neutral: "You seem balanced and calm right now. 😌",
-            Excited: "Full of positive energy! ⚡",
-            Worried: "Feeling anxious. Ground yourself. 🌍",
-            Tired: "You look exhausted. Rest is important. 😴",
-            Grateful: "Feeling thankful. Share that gratitude. 🙏",
-            Loved: "Feeling warm and connected. ❤️",
-            Confused: "Uncertain about something. Take a step back. 🤔",
-            Stressed: "Under pressure. Prioritize what matters. 🎯",
-            Focused: "You're in the zone! Keep going! 🚀",
-            Peaceful: "Deep peace and contentment. 🕊️",
-            Joyful: "Pure joy! Celebrate this feeling! 🥳"
-        };
-
-        const RECS = {
-            Happy: ['Share your positive energy 🌟', 'Practice gratitude 📝', 'Channel into creativity 🎨'],
-            Sad: ['Take a 10-min walk 🚶', 'Reach out to a friend 📞', 'Try 4-7-8 breathing 🌬️'],
-            Angry: ['Step away for 10 min 🚪', 'Progressive relaxation 💆', 'Write it down 📝'],
-            Surprised: ['Ground yourself 👀', 'Take slow deep breaths 🌬️', 'Assess before reacting 🤔'],
-            Calm: ['Tackle your biggest task 🎯', 'Stay hydrated 💧', 'Share your calm 🤝'],
-            Neutral: ['Check in with yourself 🧠', '5-min mindfulness 🧘', 'Maintain sleep 😴'],
-            Excited: ['Channel your energy ⚡', 'Share your excitement 🗣️', 'Take a moment to breathe 🌬️'],
-            Worried: ['Write down your concerns 📝', 'Talk to someone 🗣️', 'Focus on what you control 🎯'],
-            Tired: ['Take a short break 😴', 'Stay hydrated 💧', 'Get fresh air 🌿'],
-            Grateful: ['Share your gratitude 🙏', 'Write 3 things you\'re grateful for 📝', 'Spread kindness 🌟'],
-            Loved: ['Share that love ❤️', 'Call someone you care about 📞', 'Practice self-love 🧘'],
-            Confused: ['Take a step back 🤔', 'Ask for clarification 🗣️', 'Break it down 📝'],
-            Stressed: ['Take 5 deep breaths 🌬️', 'Step away from your screen 🚶', 'List 3 things you can control 🎯'],
-            Focused: ['Keep going! 🎯', 'Take a 2-min stretch 🧘', 'Stay hydrated 💧'],
-            Peaceful: ['Enjoy this moment 🕊️', 'Share your calm 🤝', 'Journal about this feeling 📝'],
-            Joyful: ['Celebrate! 🥳', 'Share your joy 🗣️', 'Dance or move your body 💃']
-        };
-
-        // ─── DOM REFS ──────────────────────────────────────────
-        const videoEl = document.getElementById('videoEl');
-        const overlayCanvas = document.getElementById('overlayCanvas');
-        const overlayCtx = overlayCanvas.getContext('2d');
-
-        // ─── NAME ─────────────────────────────────────────────
-        function updateNameBox() {
-            const box = document.getElementById('nameBox');
-            if (S.userName) {
-                box.className = 'name-box valid';
-                document.getElementById('userNameInput').value = S.userName;
-            } else {
-                box.className = 'name-box required';
-            }
-        }
-
-        document.getElementById('setNameBtn').addEventListener('click', function() {
-            const name = document.getElementById('userNameInput').value.trim();
-            if (name) {
-                S.userName = name;
-                localStorage.setItem('heartauth_user', name);
-                updateNameBox();
-                toast('👤 Name set: ' + name);
-                checkReady();
-            } else {
-                toast('⚠️ Name is required!');
-                document.getElementById('nameBox').className = 'name-box required';
-            }
-        });
-
-        document.getElementById('userNameInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('setNameBtn').click();
-        });
-
-        if (S.userName) {
-            document.getElementById('userNameInput').value = S.userName;
-            updateNameBox();
-        }
-
-        function checkReady() {
-            document.getElementById('btnAnalyze').disabled = !(S.userName && S.faceDetected);
-        }
-
-        // ─── TOAST ────────────────────────────────────────────
-        function toast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.classList.add('show');
-            clearTimeout(window.toastTimer);
-            window.toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
-        }
-
-        function setStatus(dotId, state, labelId, text) {
-            const dot = document.getElementById(dotId);
-            if (dot) dot.className = 'status-dot' + (state ? ' ' + state : '');
-            const label = document.getElementById(labelId);
-            if (label) label.textContent = text;
-        }
-
-        // ─── MEDIAPIPE ─────────────────────────────────────────
-        function onResults(results) {
-            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-                S.faceDetected = true;
-                S.landmarks = results.multiFaceLandmarks[0];
-
-                drawFaceMesh(results.multiFaceLandmarks[0]);
-                analyzeAllFeatures(results.multiFaceLandmarks[0]);
-
-                document.getElementById('badgeFaceStatus').className = 'camera-badge good';
-                document.getElementById('badgeFaceStatus').textContent = 'Face Detected';
-                setStatus('dotFace', 'active', 'lblFace', 'Face Detected');
-                checkReady();
-            } else {
-                S.faceDetected = false;
-                S.landmarks = null;
-                document.getElementById('badgeFaceStatus').className = 'camera-badge bad';
-                document.getElementById('badgeFaceStatus').textContent = 'No Face';
-                setStatus('dotFace', 'error', 'lblFace', 'No Face');
-                checkReady();
-            }
-        }
-
-        function drawFaceMesh(landmarks) {
-            const w = overlayCanvas.width || 400;
-            const h = overlayCanvas.height || 300;
-
-            // Mesh connections
-            const connections = [
-                [10, 338],
-                [338, 297],
-                [297, 332],
-                [332, 284],
-                [284, 251],
-                [251, 389],
-                [389, 356],
-                [356, 454],
-                [454, 323],
-                [323, 361],
-                [361, 288],
-                [288, 397],
-                [397, 365],
-                [365, 379],
-                [379, 378],
-                [378, 400],
-                [400, 377],
-                [377, 152],
-                [152, 148],
-                [148, 176],
-                [176, 149],
-                [149, 150],
-                [150, 136],
-                [136, 172],
-                [172, 58],
-                [58, 132],
-                [132, 93],
-                [93, 234],
-                [234, 127],
-                [127, 162],
-                [162, 21],
-                [21, 54],
-                [54, 103],
-                [103, 67],
-                [67, 109],
-                [109, 10]
-            ];
-
-            overlayCtx.strokeStyle = 'rgba(0,229,255,0.1)';
-            overlayCtx.lineWidth = 0.5;
-            overlayCtx.beginPath();
-            connections.forEach(([i, j]) => {
-                if (landmarks[i] && landmarks[j]) {
-                    overlayCtx.moveTo(landmarks[i].x * w, landmarks[i].y * h);
-                    overlayCtx.lineTo(landmarks[j].x * w, landmarks[j].y * h);
-                }
-            });
-            overlayCtx.stroke();
-
-            // Key features
-            const features = [
-                { pts: [33, 133, 157, 158, 159, 160, 161, 173], color: 'rgba(0,229,255,0.6)' },
-                { pts: [362, 263, 387, 386, 385, 384, 398, 466], color: 'rgba(0,229,255,0.6)' },
-                { pts: [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308], color: 'rgba(255,184,48,0.6)' }
-            ];
-            features.forEach(f => {
-                overlayCtx.strokeStyle = f.color;
-                overlayCtx.lineWidth = 1.5;
-                overlayCtx.beginPath();
-                f.pts.forEach((idx, i) => {
-                    if (landmarks[idx]) {
-                        const p = landmarks[idx];
-                        i === 0 ? overlayCtx.moveTo(p.x * w, p.y * h) : overlayCtx.lineTo(p.x * w, p.y * h);
-                    }
-                });
-                overlayCtx.closePath();
-                overlayCtx.stroke();
-            });
-        }
-
-        // ─── ANALYZE ALL FEATURES ─────────────────────────────
-        function analyzeAllFeatures(landmarks) {
-            // ─── EYE ASPECT RATIO ──────────────────────────
-            const leftEye = [33, 133, 160, 158, 159, 157, 173, 153, 144, 145];
-            const rightEye = [362, 263, 387, 386, 385, 384, 398, 466, 373, 374];
-
-            function calcEAR(indices) {
-                const p = (i) => landmarks[i];
-                const v1 = { x: p(indices[1]).x - p(indices[0]).x, y: p(indices[1]).y - p(indices[0]).y };
-                const v2 = { x: p(indices[2]).x - p(indices[0]).x, y: p(indices[2]).y - p(indices[0]).y };
-                const v3 = { x: p(indices[3]).x - p(indices[0]).x, y: p(indices[3]).y - p(indices[0]).y };
-                const v4 = { x: p(indices[4]).x - p(indices[0]).x, y: p(indices[4]).y - p(indices[0]).y };
-                const d1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
-                const d2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
-                const d3 = Math.sqrt(v3.x * v3.x + v3.y * v3.y);
-                const d4 = Math.sqrt(v4.x * v4.x + v4.y * v4.y);
-                return (d1 + d2 + d3) / (2 * d4);
-            }
-
-            S.leftEAR = calcEAR(leftEye);
-            S.rightEAR = calcEAR(rightEye);
-            const avgEAR = (S.leftEAR + S.rightEAR) / 2;
-
-            // Blink detection with adaptive threshold
-            S.earHistory.push(avgEAR);
-            if (S.earHistory.length > 50) S.earHistory.shift();
-
-            if (S.earHistory.length > 20) {
-                const mean = S.earHistory.reduce((a, b) => a + b, 0) / S.earHistory.length;
-                const variance = S.earHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / S.earHistory.length;
-                const std = Math.sqrt(variance);
-                S.adaptiveThreshold = Math.max(0.1, mean - 1.5 * std);
-            }
-
-            if (avgEAR < S.adaptiveThreshold && S.lastBlinkTime === 0) {
-                S.blinkCount++;
-                S.lastBlinkTime = Date.now();
-                S.blinkHistory.push(Date.now());
-                const cutoff = Date.now() - 60000;
-                S.blinkHistory = S.blinkHistory.filter(t => t > cutoff);
-                S.blinkRate = Math.round(S.blinkHistory.length);
-                document.getElementById('badgeBlinks').style.background = 'rgba(0,229,255,0.4)';
-                setTimeout(() => document.getElementById('badgeBlinks').style.background = '', 200);
-            }
-            if (avgEAR > S.adaptiveThreshold) S.lastBlinkTime = 0;
-
-            // ─── MOUTH ASPECT RATIO ──────────────────────────
-            const mouth = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308];
-            const p = (i) => landmarks[i];
-            const m1 = { x: p(mouth[1]).x - p(mouth[0]).x, y: p(mouth[1]).y - p(mouth[0]).y };
-            const m2 = { x: p(mouth[2]).x - p(mouth[0]).x, y: p(mouth[2]).y - p(mouth[0]).y };
-            const m3 = { x: p(mouth[3]).x - p(mouth[0]).x, y: p(mouth[3]).y - p(mouth[0]).y };
-            const m4 = { x: p(mouth[4]).x - p(mouth[0]).x, y: p(mouth[4]).y - p(mouth[0]).y };
-            const d1 = Math.sqrt(m1.x * m1.x + m1.y * m1.y);
-            const d2 = Math.sqrt(m2.x * m2.x + m2.y * m2.y);
-            const d3 = Math.sqrt(m3.x * m3.x + m3.y * m3.y);
-            const d4 = Math.sqrt(m4.x * m4.x + m4.y * m4.y);
-            S.mouthMAR = (d1 + d2 + d3) / (2 * d4);
-            S.mouthOpenness = Math.min(1, S.mouthMAR * 2.5);
-
-            // ─── FACIAL ACTION UNITS ──────────────────────────
-            const leftBrow = landmarks[53],
-                rightBrow = landmarks[283];
-            const leftEyeP = landmarks[33],
-                rightEyeP = landmarks[362];
-
-            if (leftBrow && rightBrow && leftEyeP && rightEyeP) {
-                const leftDiff = leftBrow.y - leftEyeP.y;
-                const rightDiff = rightBrow.y - rightEyeP.y;
-                S.AU1 = Math.max(0, Math.min(1, ((leftDiff + rightDiff) / 2 - 0.05) * 10));
-            }
-            S.AU12 = Math.max(0, Math.min(1, (S.mouthMAR * 3 - 0.3)));
-            S.AU25 = Math.min(1, S.mouthMAR * 2);
-
-            // ─── HEAD POSE ────────────────────────────────────
-            const nose = landmarks[1],
-                leftEar = landmarks[234],
-                rightEar = landmarks[454];
-            if (nose && leftEar && rightEar) {
-                const earMidY = (leftEar.y + rightEar.y) / 2;
-                S.pitch = Math.max(-30, Math.min(30, (nose.y - earMidY) * 100));
-                const earMidX = (leftEar.x + rightEar.x) / 2;
-                S.yaw = Math.max(-45, Math.min(45, (nose.x - earMidX) * 150));
-                const eyeL = landmarks[33],
-                    eyeR = landmarks[362];
-                if (eyeL && eyeR) {
-                    S.roll = Math.atan2(eyeR.y - eyeL.y, eyeR.x - eyeL.x) * 180 / Math.PI;
-                }
-                S.headHistory.push({ pitch: S.pitch, yaw: S.yaw, roll: S.roll });
-                if (S.headHistory.length > 10) S.headHistory.shift();
-                if (S.headHistory.length > 5) {
-                    let variance = 0;
-                    const avgP = S.headHistory.reduce((s, h) => s + h.pitch, 0) / S.headHistory.length;
-                    const avgY = S.headHistory.reduce((s, h) => s + h.yaw, 0) / S.headHistory.length;
-                    const avgR = S.headHistory.reduce((s, h) => s + h.roll, 0) / S.headHistory.length;
-                    S.headHistory.forEach(h => {
-                        variance += Math.pow(h.pitch - avgP, 2) + Math.pow(h.yaw - avgY, 2) + Math.pow(h.roll -
-                            avgR, 2);
-                    });
-                    S.stability = Math.max(0, Math.min(100, 100 - variance * 80));
-                }
-            }
-
-            // ─── rPPG HEART RATE ──────────────────────────────
-            calculaterPPG(landmarks);
-
-            // ─── UPDATE EMOTIONS ──────────────────────────────
-            updateEmotions();
-
-            // ─── UPDATE UI ────────────────────────────────────
-            updateUI();
-
-            // ─── BLINK UI ──────────────────────────────────────
-            document.getElementById('badgeBlinks').textContent = 'Blinks: ' + S.blinkCount;
-            document.getElementById('blinkCount').textContent = S.blinkCount;
-            document.getElementById('blinkRate').textContent = S.blinkRate + ' blinks/min';
-            document.getElementById('blinkBar').style.width = Math.min(100, (S.blinkRate / 30) * 100) + '%';
-
-            // ─── FACE METRICS ──────────────────────────────────
-            const faceW = Math.abs(landmarks[234].x - landmarks[454].x);
-            const faceH = Math.abs(landmarks[10].y - landmarks[199].y);
-            document.getElementById('faceSize').textContent = (faceH / faceW * 100).toFixed(0) + '%';
-            document.getElementById('faceConf').textContent = Math.min(100, (avgEAR > 0.15 ? 50 : 0) + (S.mouthMAR > 0.1 ?
-                30 : 0) + 20) + '%';
-            document.getElementById('faceSym').textContent = Math.abs(S.leftEAR - S.rightEAR) < 0.03 ? '✓ High' : 'Medium';
-            document.getElementById('faceStability').textContent = S.stability ? S.stability.toFixed(0) + '%' : '—';
-        }
-
-        // ─── rPPG HEART RATE ──────────────────────────────────
-        function calculaterPPG(landmarks) {
-            // Forehead region for skin sampling
-            const foreheadIndices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377,
-                152
-            ];
-
-            // Create temp canvas for pixel sampling
-            if (!S.tempCanvas) {
-                S.tempCanvas = document.createElement('canvas');
-                S.tempCanvas.width = 160;
-                S.tempCanvas.height = 120;
-                S.tempCtx = S.tempCanvas.getContext('2d');
-            }
-
-            // Sample pixels from video
-            S.tempCtx.drawImage(videoEl, 0, 0, 160, 120);
-            const imageData = S.tempCtx.getImageData(0, 0, 160, 120);
-            const data = imageData.data;
-
-            let rSum = 0,
-                gSum = 0,
-                bSum = 0,
-                count = 0;
-
-            foreheadIndices.forEach(idx => {
-                if (landmarks[idx]) {
-                    const px = Math.floor(landmarks[idx].x * 160);
-                    const py = Math.floor(landmarks[idx].y * 120);
-                    if (px >= 0 && px < 160 && py >= 0 && py < 120) {
-                        const pos = (py * 160 + px) * 4;
-                        rSum += data[pos] || 0;
-                        gSum += data[pos + 1] || 0;
-                        bSum += data[pos + 2] || 0;
-                        count++;
-                    }
-                }
-            });
-
-            if (count > 5) {
-                // Calculate average RGB
-                const rAvg = rSum / count;
-                const gAvg = gSum / count;
-                const bAvg = bSum / count;
-
-                // Combined signal (rPPG uses green channel most, but we combine all)
-                const pulseSignal = (rAvg + gAvg + bAvg) / 3;
-
-                // Store signal
-                S.hrSignal.push(pulseSignal);
-                if (S.hrSignal.length > 150) S.hrSignal.shift();
-
-                // Calculate HR if we have enough samples
-                if (S.hrSignal.length > 30) {
-                    // Detrend
-                    const detrended = detrendSignal(S.hrSignal);
-
-                    // Find peaks
-                    const peaks = findPeaks(detrended);
-
-                    if (peaks.length >= 2) {
-                        // Calculate average interval between peaks
-                        let totalInterval = 0;
-                        for (let i = 1; i < peaks.length; i++) {
-                            totalInterval += peaks[i] - peaks[i - 1];
-                        }
-                        const avgInterval = totalInterval / (peaks.length - 1);
-
-                        // Convert to BPM (assuming ~30fps)
-                        const fps = 30;
-                        const intervalSeconds = avgInterval / fps;
-                        const hr = 60 / intervalSeconds;
-
-                        if (hr > 40 && hr < 120) {
-                            S.hrValue = S.hrValue * 0.7 + hr * 0.3;
-                            S.hrValue = Math.round(S.hrValue);
-                            S.hrConfidence = Math.min(100, Math.round(S.hrSignal.length / 150 * 100));
-                            S.lastHRUpdate = Date.now();
-
-                            // Update UI
-                            document.getElementById('hrDisplay').textContent = S.hrValue;
-                            document.getElementById('hrDisplay').style.color =
-                                S.hrValue > 85 ? '#FF4C5E' : S.hrValue > 70 ? '#FFB830' : '#00C48C';
-
-                            const hrPct = Math.max(0, Math.min(100, (S.hrValue - 40) / 80 * 100));
-                            document.getElementById('hrBar').style.width = hrPct + '%';
-
-                            document.getElementById('hrStatus').textContent = '❤️ ' + S.hrValue + ' BPM · ' + S
-                                .hrConfidence + '% confidence';
-                            setStatus('dotHR', 'active', 'lblHR', 'HR: ' + S.hrValue + ' BPM');
-                        }
-                    } else {
-                        document.getElementById('hrStatus').textContent = '⏳ Detecting pulse...';
-                    }
-                } else {
-                    document.getElementById('hrStatus').textContent =
-                    '⏳ Collecting signal... ' + S.hrSignal.length + '/30';
-                }
-            } else {
-                document.getElementById('hrStatus').textContent = '⚠️ Position face for heart rate';
-            }
-        }
-
-        function detrendSignal(signal) {
-            const windowSize = 20;
-            const detrended = [];
-            for (let i = 0; i < signal.length; i++) {
-                let sum = 0,
-                    count = 0;
-                for (let j = Math.max(0, i - windowSize / 2); j < Math.min(signal.length, i + windowSize / 2); j++) {
-                    sum += signal[j];
-                    count++;
-                }
-                const avg = sum / count;
-                detrended.push(signal[i] - avg);
-            }
-            return detrended;
-        }
-
-        function findPeaks(signal) {
-            const peaks = [];
-            const threshold = 0.02;
-
-            for (let i = 2; i < signal.length - 2; i++) {
-                if (signal[i] > signal[i - 1] && signal[i] > signal[i - 2] &&
-                    signal[i] > signal[i + 1] && signal[i] > signal[i + 2] &&
-                    signal[i] > threshold) {
-                    peaks.push(i);
-                }
-            }
-            return peaks;
-        }
-
-        // ─── EMOTION DETECTION ──────────────────────────────────
-        function updateEmotions() {
-            // Calculate emotion scores based on facial features
-            const e = {
-                Happy: S.AU12 * 0.8 + (1 - S.AU1) * 0.2 + Math.max(0, S.mouthMAR - 0.1) * 0.3,
-                Sad: S.AU1 * 0.6 + (1 - S.AU12) * 0.4,
-                Angry: S.AU1 * 0.5 + (1 - S.mouthOpenness) * 0.4 + (1 - S.AU12) * 0.3,
-                Surprised: S.AU25 * 0.5 + S.AU1 * 0.3 + (1 - S.AU12) * 0.2,
-                Calm: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (1 - Math.abs(S.AU12 - 0.3)) * 0.3,
-                Neutral: 0.2,
-                Excited: S.AU12 * 0.5 + S.AU1 * 0.3 + S.AU25 * 0.2,
-                Worried: S.AU1 * 0.5 + (1 - S.AU12) * 0.4,
-                Tired: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.4,
-                Grateful: S.AU12 * 0.5 + (1 - S.AU1) * 0.3 + 0.2,
-                Loved: S.AU12 * 0.6 + (1 - S.AU1) * 0.3,
-                Confused: S.AU1 * 0.3 + S.AU25 * 0.3,
-                Stressed: S.AU1 * 0.4 + (1 - S.mouthOpenness) * 0.3 + (1 - S.AU12) * 0.3,
-                Focused: (1 - S.AU1) * 0.4 + (1 - S.AU25) * 0.3 + (S.AU12 * 0.2)
-            };
-
-            // Apply stability weight
-            const sw = Math.min(1, (S.stability || 50) / 100);
-            for (let key in e) e[key] *= sw;
-
-            // Smooth emotions with alpha
-            const alpha = 0.35;
-            if (!S.emotions || Object.keys(S.emotions).length === 0) {
-                S.emotions = e;
-            } else {
-                for (let key in e) {
-                    S.emotions[key] = S.emotions[key] * (1 - alpha) + e[key] * alpha;
-                }
-            }
-
-            // Normalize
-            const total = Object.values(S.emotions).reduce((a, b) => a + b, 0) || 1;
-            for (let key in S.emotions) S.emotions[key] /= total;
-
-            // Find dominant emotion
-            let dominant = 'Neutral',
-                maxVal = 0;
-            for (let key in S.emotions) {
-                if (S.emotions[key] > maxVal) {
-                    maxVal = S.emotions[key];
-                    dominant = key;
-                }
-            }
-
-            // Minimum confidence threshold
-            if (maxVal < 0.12) {
-                dominant = 'Neutral';
-                maxVal = S.emotions.Neutral || 0.5;
-            }
-
-            S.dominantEmotion = dominant;
-            S.emotionConfidence = Math.round(maxVal * 100);
-
-            // ─── UPDATE EMOTION UI (LIVE) ──────────────────────
-            const emoji = EMOTION_EMOJI[dominant] || '😐';
-            const desc = EMOTION_DESCRIPTIONS[dominant] || "You seem balanced right now.";
-
-            document.getElementById('bigEmoji').textContent = emoji;
-            document.getElementById('emotionName').textContent = dominant;
-            document.getElementById('emotionDesc').textContent = desc;
-            document.getElementById('emotionConf').textContent = 'Confidence: ' + S.emotionConfidence + '%';
-
-            // Update emotion grid
-            const sorted = Object.entries(S.emotions).sort((a, b) => b[1] - a[1]).slice(0, 6);
-            const grid = document.getElementById('emotionGrid');
-            grid.innerHTML = sorted.map(([em, val]) => `
-                    <div class="emotion-item ${em === dominant ? 'active' : ''}">
-                        <div class="em-name">${EMOTION_EMOJI[em] || '😐'} ${em}</div>
-                        <div class="em-pct">${Math.round(val * 100)}%</div>
-                        <div class="em-bar"><div class="em-fill" style="width:${Math.round(val * 100)}%;"></div></div>
+    <div class="status-bar">
+        <div class="status-pill"><div class="status-dot" id="dotCamera"></div><span id="lblCamera">Off</span></div>
+        <div class="status-pill"><div class="status-dot" id="dotFace"></div><span id="lblFace">No Face</span></div>
+        <div class="status-pill"><div class="status-dot" id="dotVoice"></div><span id="lblVoice">Mic Off</span></div>
+        <div class="status-pill"><div class="status-dot" id="dotHR"></div><span id="lblHR">HR: —</span></div>
+    </div>
+
+    <div class="btn-row">
+        <button class="btn btn-primary" id="btnStart">▶ Start Camera</button>
+        <button class="btn btn-danger" id="btnStop" disabled>⏹ Stop</button>
+        <button class="btn btn-success" id="btnAnalyze" disabled>📊 Record & Send</button>
+        <button class="btn btn-ghost" id="btnClear">🗑 Clear History</button>
+    </div>
+
+    <div class="main-grid">
+        <div class="camera-panel">
+            <div class="section-title">🎥 Live Camera</div>
+            <div class="camera-inner">
+                <div class="camera-placeholder" id="camPlaceholder">
+                    <div class="cam-icon">📷</div>
+                    <div>Press "Start Camera"</div>
+                </div>
+                <video id="videoEl" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+            </div>
+            <div class="camera-info-row">
+                <span class="camera-badge" id="badgeFPS">FPS: —</span>
+                <span class="camera-badge" id="badgeFaceQ">Quality: —</span>
+                <span class="camera-badge" id="badgeFaceStatus">No Face</span>
+                <span class="camera-badge" id="badgeBlinks">Blinks: 0</span>
+            </div>
+        </div>
+
+        <div class="metrics-panel">
+            <div class="section-title">📡 Live Biometric Data</div>
+            <div class="metrics-scroll">
+                <div class="emotion-display">
+                    <span class="big-emoji" id="bigEmoji">😐</span>
+                    <div class="emotion-name" id="emotionName">Neutral</div>
+                    <div class="emotion-desc" id="emotionDesc">You seem balanced and calm right now.</div>
+                    <div class="confidence" style="font-size:10px;color:var(--text-3);margin-top:4px;" id="emotionConf">Confidence: 0%</div>
+                </div>
+
+                <div class="metric-card" style="border:2px solid var(--cyan);">
+                    <div class="metric-header">
+                        <div class="metric-label">❤️ Heart Rate <span style="color:var(--cyan);">(Live)</span></div>
                     </div>
-                `).join('');
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                        <div>
+                            <div class="hr-live">
+                                <span class="pulse-ring" id="pulseRing"></span>
+                                <div class="metric-value" id="hrDisplay" style="font-size:32px;color:var(--cyan);">--</div>
+                            </div>
+                            <div class="metric-sub" id="hrStatus">Waiting for face...</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="progress-track" style="height:8px;">
+                                <div class="progress-fill" id="hrBar" style="width:0%;background:var(--cyan);"></div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-3);margin-top:2px;">
+                                <span>40</span><span>72</span><span>100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            // ─── STRESS LEVEL ──────────────────────────────────
-            const stressFromEmotion = ['Angry', 'Stressed', 'Worried'].includes(dominant) ? 70 :
-                ['Sad', 'Confused', 'Tired'].includes(dominant) ? 50 : 20;
+                <div class="metric-card">
+                    <div class="metric-header"><div class="metric-label">🌟 Wellbeing Score</div></div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                        <div>
+                            <div class="metric-value" id="wellbeingVal">—</div>
+                            <div class="metric-sub" id="wellbeingState">Start camera</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="wellbeingBar" style="width:0%;background:var(--jade);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            S.stressLevel = Math.round(S.stressLevel * 0.7 + (stressFromEmotion + S.voiceStress * 0.3) * 0.3);
-            S.stressLevel = Math.min(100, Math.max(0, S.stressLevel));
+                <div class="metric-card">
+                    <div class="metric-header"><div class="metric-label">😰 Stress Level</div></div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                        <div>
+                            <div class="metric-value" id="stressVal">0%</div>
+                            <div class="metric-sub" id="stressState">Calm</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="stressBar" style="width:0%;background:var(--jade);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            document.getElementById('stressVal').textContent = S.stressLevel + '%';
-            const stressState = S.stressLevel > 65 ? 'High 😰' : S.stressLevel > 35 ? 'Moderate 😐' : 'Calm 😌';
-            document.getElementById('stressState').textContent = stressState;
-            document.getElementById('stressBar').style.width = S.stressLevel + '%';
-            document.getElementById('stressBar').style.background = S.stressLevel > 65 ? '#FF4C5E' : S.stressLevel > 35 ?
-                '#FFB830' : '#00C48C';
+                <div class="metric-card">
+                    <div class="metric-header"><div class="metric-label">👁️ Blink Rate</div></div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+                        <div>
+                            <div class="metric-value" id="blinkCount">0</div>
+                            <div class="metric-sub" id="blinkRate">0 blinks/min</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="progress-track"><div class="progress-fill" id="blinkBar" style="width:0%;background:var(--purple);"></div></div>
+                        </div>
+                    </div>
+                </div>
 
-            // ─── WELLBEING ──────────────────────────────────────
-            calculateWellbeing();
+                <div class="metric-card">
+                    <div class="metric-label">🎭 Emotion Breakdown</div>
+                    <div class="emotion-grid" id="emotionGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // ─── RECOMMENDATIONS ────────────────────────────────
-            updateRecommendations();
-        }
+    <div class="bottom-grid">
+        <div class="sub-panel">
+            <div class="section-title">🎙️ Voice Analysis</div>
+            <div class="voice-bars" id="voiceBarsRow"></div>
+            <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div class="metric-card" style="padding:6px 8px;">
+                    <div class="metric-label">Stress</div>
+                    <div class="metric-value" id="voiceStress">—</div>
+                    <div class="progress-track"><div class="progress-fill" id="voiceStressBar" style="width:0%;background:var(--coral);"></div></div>
+                </div>
+                <div class="metric-card" style="padding:6px 8px;">
+                    <div class="metric-label">Pitch</div>
+                    <div class="metric-value" id="voicePitch" style="font-size:16px;">— Hz</div>
+                    <div class="metric-sub" id="voiceStatus">Silent</div>
+                </div>
+            </div>
+            <div style="padding:0 12px 8px;">
+                <button class="btn btn-ghost" style="width:100%;font-size:11px;" id="btnMic">🎙️ Enable Microphone</button>
+            </div>
+        </div>
 
-        // ─── WELLBEING ──────────────────────────────────────────
-        function calculateWellbeing() {
-            const emotionScores = {
-                Happy: 92,
-                Calm: 88,
-                Neutral: 62,
-                Surprised: 58,
-                Sad: 28,
-                Angry: 18,
-                Excited: 85,
-                Worried: 35,
-                Tired: 40,
-                Grateful: 90,
-                Loved: 95,
-                Confused: 45,
-                Stressed: 20,
-                Focused: 80,
-                Peaceful: 95,
-                Joyful: 90
-            };
+        <div class="sub-panel">
+            <div class="section-title">💡 Personalized Tips</div>
+            <div class="recs-list" id="recsList">
+                <div style="color:var(--text-3);font-size:11px;padding:6px 0;">Start camera to get personalized help</div>
+            </div>
+        </div>
 
-            const emScore = emotionScores[S.dominantEmotion] || 60;
-            const hrScore = Math.max(15, 100 - Math.abs(S.hrValue - 66) * 2.5);
-            const blinkScore = Math.max(15, 100 - Math.abs(S.blinkRate - 17) * 4);
-            const voiceScore = Math.max(10, 100 - S.voiceStress * 0.8);
-            const stabilityScore = Math.max(10, S.stability || 50);
+        <div class="sub-panel">
+            <div class="section-title">📊 Face Metrics</div>
+            <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div><span style="font-size:9px;color:var(--text-3);">Symmetry</span><br><span id="faceSym" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                <div><span style="font-size:9px;color:var(--text-3);">Confidence</span><br><span id="faceConf" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                <div><span style="font-size:9px;color:var(--text-3);">Face Size</span><br><span id="faceSize" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+                <div><span style="font-size:9px;color:var(--text-3);">Stability</span><br><span id="faceStability" style="font-size:16px;font-weight:700;font-family:var(--mono);">—</span></div>
+            </div>
+        </div>
+    </div>
 
-            const factors = [
-                { value: emScore, weight: 0.30 },
-                { value: hrScore, weight: 0.25 },
-                { value: blinkScore, weight: 0.15 },
-                { value: voiceScore, weight: 0.15 },
-                { value: stabilityScore, weight: 0.15 }
-            ];
+    <div class="history-section">
+        <div class="section-title" style="justify-content:space-between;">
+            <span>📋 Your History</span>
+            <span id="histCount" style="font-size:10px;">0 sessions</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="wellbeingChart"></canvas>
+        </div>
+        <table>
+            <thead><tr><th>#</th><th>Date</th><th>Emotion</th><th>Score</th><th>BPM</th><th>Stress</th><th>Blinks</th></tr></thead>
+            <tbody id="historyBody"><tr><td colspan="7" class="empty-history">No sessions recorded yet</td></tr></tbody>
+        </table>
+    </div>
 
-            let total = 0,
-                wSum = 0;
-            factors.forEach(f => { total += f.value * f.weight;
-                wSum += f.weight; });
-            S.wellbeing = Math.round(total / wSum);
+    <div class="rppg-explanation">
+        <h2>🫀 How rPPG Works</h2>
+        <p><span class="highlight">rPPG (remote Photoplethysmography)</span> measures heart rate by analyzing <span class="highlight">subtle color changes in skin</span> caused by blood flow.</p>
+        <div class="step"><strong>1. 📷 Camera captures your face</strong> — forehead/cheek region</div>
+        <div class="step"><strong>2. 🎨 Extract RGB color signal</strong> — average color values per frame</div>
+        <div class="step"><strong>3. ❤️ Blood volume pulse</strong> — heart contracts → skin gets redder</div>
+        <div class="step"><strong>4. 📊 Signal processing</strong> — filter noise, find dominant frequency</div>
+        <div class="step"><strong>5. 🔢 Calculate BPM</strong> — frequency × 60 = heart rate</div>
+        <div class="diagram">📷 Camera → 👤 Face → 🎨 RGB → 📊 Filter → 🔢 Frequency → ❤️ <strong style="color:var(--cyan);">72 BPM</strong></div>
+    </div>
 
-            const state = S.wellbeing >= 70 ? 'Calm 😌' : S.wellbeing >= 40 ? 'Moderate 😐' : 'Stressed 😰';
-            document.getElementById('wellbeingVal').textContent = S.wellbeing;
-            document.getElementById('wellbeingState').textContent = state;
-            document.getElementById('wellbeingBar').style.width = S.wellbeing + '%';
-            document.getElementById('wellbeingBar').style.background = S.wellbeing >= 70 ? '#00C48C' : S.wellbeing >= 40 ?
-                '#FFB830' : '#FF4C5E';
-        }
+    <div class="disclaimer-box">
+        <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes. Not a medical device.
+    </div>
 
-        // ─── RECOMMENDATIONS ──────────────────────────────────
-        function updateRecommendations() {
-            const list = RECS[S.dominantEmotion] || RECS.Neutral;
-            document.getElementById('recsList').innerHTML = list.map((r, i) =>
-                `<div class="rec-item"><div class="rec-num">${i+1}</div><span>${r}</span></div>`
-            ).join('');
-        }
+    <footer class="footer">
+        <span class="name">Hammad Sayed</span> · <span class="grade">Grade 9</span> · <span class="school">Leaders Private School, UAE</span>
+    </footer>
+</div>
 
-        // ─── UI UPDATE ──────────────────────────────────────────
-        function updateUI() {
-            // Voice already updates separately
-            // Everything else updates through the emotion/wellbeing functions
-        }
+<div class="toast" id="toast"></div>
 
-        // ─── VOICE ─────────────────────────────────────────────
-        async function toggleMic() {
-            if (S.micOn) { stopMic(); } else { await startMic(); }
-        }
+<script>
+// ============================================================
+// HEARTAUTH · COMPLETE FRONTEND
+// ============================================================
 
-        async function startMic() {
-            try {
-                S.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                S.audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-                const source = S.audioCtx.createMediaStreamSource(S.micStream);
-                S.analyser = S.audioCtx.createAnalyser();
-                S.analyser.fftSize = 2048;
-                S.analyser.smoothingTimeConstant = 0.5;
-                source.connect(S.analyser);
-                S.micOn = true;
-                document.getElementById('btnMic').textContent = '🔇 Disable Mic';
-                setStatus('dotVoice', 'active', 'lblVoice', 'Mic On');
-                audioLoop();
-            } catch (e) { toast('❌ Microphone access denied'); }
-        }
+const S = {
+    cameraOn: false, micOn: false, faceDetected: false, landmarks: null,
+    userName: localStorage.getItem('heartauth_user') || '',
+    leftEAR: 0, rightEAR: 0, earHistory: [], blinkCount: 0, blinkHistory: [], blinkRate: 0,
+    lastBlinkTime: 0, adaptiveThreshold: 0.2,
+    mouthMAR: 0, mouthOpenness: 0,
+    AU1: 0, AU12: 0, AU25: 0,
+    pitch: 0, yaw: 0, roll: 0, headHistory: [],
+    voiceStress: 0, voicePitch: 0, voiceRMS: 0, voiceBars: new Array(32).fill(0),
+    audioCtx: null, analyser: null, micStream: null,
+    emotions: {}, dominantEmotion: 'Neutral', emotionConfidence: 0,
+    wellbeing: 50, hrValue: 72, stressLevel: 0, stability: 0,
+    frameCount: 0, fps: 0, fpsTimer: 0,
+    hrSignal: [], hrConfidence: 0,
+    tempCanvas: null, tempCtx: null
+};
 
-        function stopMic() {
-            if (S.micStream) { S.micStream.getTracks().forEach(t => t.stop());
-                S.micStream = null; }
-            if (S.audioCtx) { S.audioCtx.close();
-                S.audioCtx = null; }
-            S.micOn = false;
-            S.analyser = null;
-            document.getElementById('btnMic').textContent = '🎙️ Enable Mic';
-            setStatus('dotVoice', '', 'lblVoice', 'Mic Off');
-        }
+const EMOTION_EMOJI = {Happy:'😄',Sad:'😢',Angry:'😠',Surprised:'😲',Calm:'😌',Neutral:'😐',Excited:'🤩',Worried:'😰',Tired:'😴',Grateful:'🙏',Loved:'🥰',Confused:'🤔',Stressed:'😫',Focused:'🧘',Peaceful:'🕊️',Joyful:'🥳'};
+const EMOTION_DESC = {Happy:"You're feeling positive and joyful! 🌟",Sad:"You're feeling down. Be gentle with yourself. 💙",Angry:"You're feeling frustrated. Take a moment to breathe. 🌬️",Surprised:"Something caught you off guard! 😲",Calm:"You're in a peaceful, centered state. 🧘",Neutral:"You seem balanced and calm right now. 😌",Excited:"Full of positive energy! ⚡",Worried:"Feeling anxious. Ground yourself. 🌍",Tired:"You look exhausted. Rest is important. 😴",Grateful:"Feeling thankful. Share that gratitude. 🙏",Loved:"Feeling warm and connected. ❤️",Confused:"Uncertain about something. Take a step back. 🤔",Stressed:"Under pressure. Prioritize what matters. 🎯",Focused:"You're in the zone! Keep going! 🚀",Peaceful:"Deep peace and contentment. 🕊️",Joyful:"Pure joy! Celebrate this feeling! 🥳"};
+const RECS = {Happy:['Share your positive energy 🌟','Practice gratitude 📝','Channel into creativity 🎨'],Sad:['Take a 10-min walk 🚶','Reach out to a friend 📞','Try 4-7-8 breathing 🌬️'],Angry:['Step away for 10 min 🚪','Progressive relaxation 💆','Write it down 📝'],Surprised:['Ground yourself 👀','Take slow deep breaths 🌬️','Assess before reacting 🤔'],Calm:['Tackle your biggest task 🎯','Stay hydrated 💧','Share your calm 🤝'],Neutral:['Check in with yourself 🧠','5-min mindfulness 🧘','Maintain sleep 😴'],Excited:['Channel your energy ⚡','Share your excitement 🗣️','Take a moment to breathe 🌬️'],Worried:['Write down your concerns 📝','Talk to someone 🗣️','Focus on what you control 🎯'],Tired:['Take a short break 😴','Stay hydrated 💧','Get fresh air 🌿'],Grateful:['Share your gratitude 🙏','Write 3 things you\'re grateful for 📝','Spread kindness 🌟'],Loved:['Share that love ❤️','Call someone you care about 📞','Practice self-love 🧘'],Confused:['Take a step back 🤔','Ask for clarification 🗣️','Break it down 📝'],Stressed:['Take 5 deep breaths 🌬️','Step away from your screen 🚶','List 3 things you can control 🎯'],Focused:['Keep going! 🎯','Take a 2-min stretch 🧘','Stay hydrated 💧'],Peaceful:['Enjoy this moment 🕊️','Share your calm 🤝','Journal about this feeling 📝'],Joyful:['Celebrate! 🥳','Share your joy 🗣️','Dance or move your body 💃']};
 
-        function audioLoop() {
-            if (!S.micOn || !S.analyser) return;
-            setTimeout(audioLoop, 60);
+const videoEl = document.getElementById('videoEl');
+const overlayCanvas = document.getElementById('overlayCanvas');
+const overlayCtx = overlayCanvas.getContext('2d');
 
-            const freqData = new Uint8Array(S.analyser.frequencyBinCount);
-            const timeDom = new Float32Array(S.analyser.fftSize);
-            S.analyser.getByteFrequencyData(freqData);
-            S.analyser.getFloatTimeDomainData(timeDom);
+function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>e.classList.remove('show'),3000);}
+function setStatus(d,s,l,t){const a=document.getElementById(d);if(a)a.className='status-dot'+(s?' '+s:'');const b=document.getElementById(l);if(b)b.textContent=t;}
 
-            let sumSq = 0;
-            for (let i = 0; i < timeDom.length; i++) sumSq += timeDom[i] * timeDom[i];
-            S.voiceRMS = Math.sqrt(sumSq / timeDom.length);
-            const voiced = S.voiceRMS > 0.01;
+function updateNameBox(){const b=document.getElementById('nameBox');if(S.userName){b.className='name-box valid';document.getElementById('userNameInput').value=S.userName;}else{b.className='name-box required';}}
+document.getElementById('setNameBtn').addEventListener('click',function(){const n=document.getElementById('userNameInput').value.trim();if(n){S.userName=n;localStorage.setItem('heartauth_user',n);updateNameBox();toast('👤 Name set: '+n);checkReady();}else{toast('⚠️ Name is required!');document.getElementById('nameBox').className='name-box required';}});
+document.getElementById('userNameInput').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('setNameBtn').click();});
+if(S.userName){document.getElementById('userNameInput').value=S.userName;updateNameBox();}
+function checkReady(){document.getElementById('btnAnalyze').disabled=!(S.userName&&S.faceDetected);}
 
-            let peakBin = 0,
-                peakVal = 0;
-            const sampleRate = S.audioCtx.sampleRate;
-            const lowBin = Math.floor(80 / (sampleRate / 2048));
-            const highBin = Math.floor(400 / (sampleRate / 2048));
-            for (let i = lowBin; i < Math.min(highBin, freqData.length); i++) {
-                if (freqData[i] > peakVal) { peakVal = freqData[i];
-                    peakBin = i; }
-            }
-            const pitch = peakBin * (sampleRate / 2048);
+function onResults(results){
+    overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+    if(results.multiFaceLandmarks&&results.multiFaceLandmarks.length>0){
+        S.faceDetected=true;S.landmarks=results.multiFaceLandmarks[0];
+        drawFaceMesh(results.multiFaceLandmarks[0]);
+        analyzeAll(results.multiFaceLandmarks[0]);
+        document.getElementById('badgeFaceStatus').className='camera-badge good';
+        document.getElementById('badgeFaceStatus').textContent='Face Detected';
+        setStatus('dotFace','active','lblFace','Face Detected');
+        checkReady();
+    }else{
+        S.faceDetected=false;S.landmarks=null;
+        document.getElementById('badgeFaceStatus').className='camera-badge bad';
+        document.getElementById('badgeFaceStatus').textContent='No Face';
+        setStatus('dotFace','error','lblFace','No Face');
+        checkReady();
+    }
+}
 
-            if (voiced && peakVal > 25) {
-                S.voicePitch = S.voicePitch * 0.7 + pitch * 0.3;
-            }
+function drawFaceMesh(lm){
+    const w=overlayCanvas.width||400,h=overlayCanvas.height||300;
+    const c=[[10,338],[338,297],[297,332],[332,284],[284,251],[251,389],[389,356],[356,454],[454,323],[323,361],[361,288],[288,397],[397,365],[365,379],[379,378],[378,400],[400,377],[377,152],[152,148],[148,176],[176,149],[149,150],[150,136],[136,172],[172,58],[58,132],[132,93],[93,234],[234,127],[127,162],[162,21],[21,54],[54,103],[103,67],[67,109],[109,10]];
+    overlayCtx.strokeStyle='rgba(0,229,255,0.1)';overlayCtx.lineWidth=0.5;overlayCtx.beginPath();c.forEach(([i,j])=>{if(lm[i]&&lm[j]){overlayCtx.moveTo(lm[i].x*w,lm[i].y*h);overlayCtx.lineTo(lm[j].x*w,lm[j].y*h);}});overlayCtx.stroke();
+    const f=[{pts:[33,133,157,158,159,160,161,173],color:'rgba(0,229,255,0.6)'},{pts:[362,263,387,386,385,384,398,466],color:'rgba(0,229,255,0.6)'},{pts:[61,146,91,181,84,17,314,405,321,375,291,308],color:'rgba(255,184,48,0.6)'}];
+    f.forEach(f=>{overlayCtx.strokeStyle=f.color;overlayCtx.lineWidth=1.5;overlayCtx.beginPath();f.pts.forEach((idx,i)=>{if(lm[idx]){const p=lm[idx];i===0?overlayCtx.moveTo(p.x*w,p.y*h):overlayCtx.lineTo(p.x*w,p.y*h);}});overlayCtx.closePath();overlayCtx.stroke();});
+}
 
-            const pitchStress = Math.max(0, Math.min(1, (S.voicePitch - 120) / 200));
-            const rmsStress = Math.min(1, S.voiceRMS * 15);
-            S.voiceStress = S.voiceStress * 0.85 + (pitchStress * 0.5 + rmsStress * 0.5) * 100 * 0.15;
+function analyzeAll(lm){
+    const le=[33,133,160,158,159,157,173,153,144,145],re=[362,263,387,386,385,384,398,466,373,374];
+    function calcEAR(idx){const p=(i)=>lm[i];const v1={x:p(idx[1]).x-p(idx[0]).x,y:p(idx[1]).y-p(idx[0]).y};const v2={x:p(idx[2]).x-p(idx[0]).x,y:p(idx[2]).y-p(idx[0]).y};const v3={x:p(idx[3]).x-p(idx[0]).x,y:p(idx[3]).y-p(idx[0]).y};const v4={x:p(idx[4]).x-p(idx[0]).x,y:p(idx[4]).y-p(idx[0]).y};const d1=Math.sqrt(v1.x*v1.x+v1.y*v1.y);const d2=Math.sqrt(v2.x*v2.x+v2.y*v2.y);const d3=Math.sqrt(v3.x*v3.x+v3.y*v3.y);const d4=Math.sqrt(v4.x*v4.x+v4.y*v4.y);return(d1+d2+d3)/(2*d4);}
+    S.leftEAR=calcEAR(le);S.rightEAR=calcEAR(re);const avgEAR=(S.leftEAR+S.rightEAR)/2;
+    S.earHistory.push(avgEAR);if(S.earHistory.length>50)S.earHistory.shift();
+    if(S.earHistory.length>20){const mean=S.earHistory.reduce((a,b)=>a+b,0)/S.earHistory.length;const variance=S.earHistory.reduce((a,b)=>a+Math.pow(b-mean,2),0)/S.earHistory.length;const std=Math.sqrt(variance);S.adaptiveThreshold=Math.max(0.1,mean-1.5*std);}
+    if(avgEAR<S.adaptiveThreshold&&S.lastBlinkTime===0){S.blinkCount++;S.lastBlinkTime=Date.now();S.blinkHistory.push(Date.now());const cutoff=Date.now()-60000;S.blinkHistory=S.blinkHistory.filter(t=>t>cutoff);S.blinkRate=Math.round(S.blinkHistory.length);document.getElementById('badgeBlinks').style.background='rgba(0,229,255,0.4)';setTimeout(()=>document.getElementById('badgeBlinks').style.background='',200);}
+    if(avgEAR>S.adaptiveThreshold)S.lastBlinkTime=0;
 
-            const bucketSize = Math.floor(freqData.length / 32);
-            for (let b = 0; b < 32; b++) {
-                let sum = 0;
-                for (let k = b * bucketSize; k < (b + 1) * bucketSize && k < freqData.length; k++) sum += freqData[k];
-                S.voiceBars[b] = S.voiceBars[b] * 0.5 + (sum / bucketSize / 255) * 0.5;
-            }
-            updateVoiceBars();
+    const mouth=[61,146,91,181,84,17,314,405,321,375,291,308];const p=(i)=>lm[i];const m1={x:p(mouth[1]).x-p(mouth[0]).x,y:p(mouth[1]).y-p(mouth[0]).y};const m2={x:p(mouth[2]).x-p(mouth[0]).x,y:p(mouth[2]).y-p(mouth[0]).y};const m3={x:p(mouth[3]).x-p(mouth[0]).x,y:p(mouth[3]).y-p(mouth[0]).y};const m4={x:p(mouth[4]).x-p(mouth[0]).x,y:p(mouth[4]).y-p(mouth[0]).y};const d1=Math.sqrt(m1.x*m1.x+m1.y*m1.y);const d2=Math.sqrt(m2.x*m2.x+m2.y*m2.y);const d3=Math.sqrt(m3.x*m3.x+m3.y*m3.y);const d4=Math.sqrt(m4.x*m4.x+m4.y*m4.y);S.mouthMAR=(d1+d2+d3)/(2*d4);S.mouthOpenness=Math.min(1,S.mouthMAR*2.5);
 
-            document.getElementById('voiceStress').textContent = Math.round(S.voiceStress);
-            document.getElementById('voiceStressBar').style.width = Math.round(S.voiceStress) + '%';
-            const stressColor = S.voiceStress > 65 ? '#FF4C5E' : S.voiceStress > 35 ? '#FFB830' : '#00C48C';
-            document.getElementById('voiceStressBar').style.background = stressColor;
-            document.getElementById('voicePitch').textContent = S.voicePitch ? Math.round(S.voicePitch) + ' Hz' : '—';
-            document.getElementById('voiceStatus').textContent = voiced ? '🔊 Active' : '⚪ Silent';
-        }
+    const lb=lm[53],rb=lm[283],leP=lm[33],reP=lm[362];if(lb&&rb&&leP&&reP){const ld=lb.y-leP.y;const rd=rb.y-reP.y;S.AU1=Math.max(0,Math.min(1,((ld+rd)/2-0.05)*10));}
+    S.AU12=Math.max(0,Math.min(1,(S.mouthMAR*3-0.3)));S.AU25=Math.min(1,S.mouthMAR*2);
 
-        function updateVoiceBars() {
-            const row = document.getElementById('voiceBarsRow');
-            const bars = row.querySelectorAll('.voice-bar');
-            for (let i = 0; i < bars.length && i < 32; i++) {
-                const h = Math.max(2, S.voiceBars[i] * 40);
-                bars[i].style.height = h + 'px';
-                const stress = Math.min(1, S.voiceStress / 100);
-                const r = Math.round(100 + stress * 155);
-                const g = Math.round(200 - stress * 150);
-                const b = Math.round(255 - stress * 200);
-                bars[i].style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
-            }
-        }
+    const nose=lm[1],leE=lm[234],reE=lm[454];if(nose&&leE&&reE){const earMidY=(leE.y+reE.y)/2;S.pitch=Math.max(-30,Math.min(30,(nose.y-earMidY)*100));const earMidX=(leE.x+reE.x)/2;S.yaw=Math.max(-45,Math.min(45,(nose.x-earMidX)*150));const eyL=lm[33],eyR=lm[362];if(eyL&&eyR){S.roll=Math.atan2(eyR.y-eyL.y,eyR.x-eyL.x)*180/Math.PI;}S.headHistory.push({pitch:S.pitch,yaw:S.yaw,roll:S.roll});if(S.headHistory.length>10)S.headHistory.shift();if(S.headHistory.length>5){let v=0;const aP=S.headHistory.reduce((s,h)=>s+h.pitch,0)/S.headHistory.length;const aY=S.headHistory.reduce((s,h)=>s+h.yaw,0)/S.headHistory.length;const aR=S.headHistory.reduce((s,h)=>s+h.roll,0)/S.headHistory.length;S.headHistory.forEach(h=>{v+=Math.pow(h.pitch-aP,2)+Math.pow(h.yaw-aY,2)+Math.pow(h.roll-aR,2);});S.stability=Math.max(0,Math.min(100,100-v*80));}}
 
-        // ─── ANALYZE & SEND ──────────────────────────────────
-        function analyzeAndSend() {
-            if (!S.userName) {
-                toast('⚠️ Name is required!');
-                document.getElementById('nameBox').className = 'name-box required';
-                return;
-            }
-            if (!S.faceDetected) {
-                toast('⚠️ No face detected!');
-                return;
-            }
+    calculaterPPG(lm);
+    updateEmotions();
+    updateUI();
 
-            const emotion = S.dominantEmotion;
-            const emoji = EMOTION_EMOJI[emotion] || '😐';
-            const score = S.wellbeing;
+    document.getElementById('badgeBlinks').textContent='Blinks: '+S.blinkCount;
+    document.getElementById('blinkCount').textContent=S.blinkCount;
+    document.getElementById('blinkRate').textContent=S.blinkRate+' blinks/min';
+    document.getElementById('blinkBar').style.width=Math.min(100,(S.blinkRate/30)*100)+'%';
 
-            const now = new Date();
-            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-            history.unshift({
-                date: now.toLocaleDateString(),
-                time: now.toLocaleTimeString(),
-                emotion: emotion,
-                score: score,
-                bpm: S.hrValue,
-                stress: S.stressLevel,
-                blinks: S.blinkCount
-            });
-            if (history.length > 20) history.length = 20;
-            localStorage.setItem('heartauth_history', JSON.stringify(history));
+    const fW=Math.abs(lm[234].x-lm[454].x);const fH=Math.abs(lm[10].y-lm[199].y);
+    document.getElementById('faceSize').textContent=(fH/fW*100).toFixed(0)+'%';
+    document.getElementById('faceConf').textContent=Math.min(100,(avgEAR>0.15?50:0)+(S.mouthMAR>0.1?30:0)+20)+'%';
+    document.getElementById('faceSym').textContent=Math.abs(S.leftEAR-S.rightEAR)<0.03?'✓ High':'Medium';
+    document.getElementById('faceStability').textContent=S.stability?S.stability.toFixed(0)+'%':'—';
+}
 
-            const data = {
-                name: S.userName,
-                timestamp: now.toISOString(),
-                hr: S.hrValue,
-                emotion: emotion,
-                emotionEmoji: emoji,
-                wellbeing: score,
-                stress: S.stressLevel,
-                blinks: S.blinkCount,
-                blinkRate: S.blinkRate,
-                emotions: S.emotions,
-                au1: Math.round(S.AU1 * 100),
-                au12: Math.round(S.AU12 * 100),
-                au25: Math.round(S.AU25 * 100),
-                hrConfidence: S.hrConfidence
-            };
+function calculaterPPG(lm){
+    const fi=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152];
+    if(!S.tempCanvas){S.tempCanvas=document.createElement('canvas');S.tempCanvas.width=160;S.tempCanvas.height=120;S.tempCtx=S.tempCanvas.getContext('2d');}
+    S.tempCtx.drawImage(videoEl,0,0,160,120);
+    const imgData=S.tempCtx.getImageData(0,0,160,120);
+    const data=imgData.data;
+    let r=0,g=0,b=0,c=0;
+    fi.forEach(idx=>{if(lm[idx]){const px=Math.floor(lm[idx].x*160);const py=Math.floor(lm[idx].y*120);if(px>=0&&px<160&&py>=0&&py<120){const pos=(py*160+px)*4;r+=data[pos]||0;g+=data[pos+1]||0;b+=data[pos+2]||0;c++;}}});
+    if(c>5){const signal=(r/c+g/c+b/c)/3;S.hrSignal.push(signal);if(S.hrSignal.length>150)S.hrSignal.shift();if(S.hrSignal.length>30){const detrended=detrend(S.hrSignal);const peaks=findPeaks(detrended);if(peaks.length>=2){let total=0;for(let i=1;i<peaks.length;i++)total+=peaks[i]-peaks[i-1];const avg=total/(peaks.length-1);const fps=30;const sec=avg/fps;const hr=60/sec;if(hr>40&&hr<120){S.hrValue=S.hrValue*0.7+hr*0.3;S.hrValue=Math.round(S.hrValue);S.hrConfidence=Math.min(100,Math.round(S.hrSignal.length/150*100));document.getElementById('hrDisplay').textContent=S.hrValue;document.getElementById('hrDisplay').style.color=S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';const pct=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));document.getElementById('hrBar').style.width=pct+'%';document.getElementById('hrStatus').textContent='❤️ '+S.hrValue+' BPM · '+S.hrConfidence+'%';setStatus('dotHR','active','lblHR','HR: '+S.hrValue+' BPM');}}}else{document.getElementById('hrStatus').textContent='⏳ Collecting signal... '+S.hrSignal.length+'/30';}}else{document.getElementById('hrStatus').textContent='⚠️ Position face for heart rate';}
+}
 
-            const readings = JSON.parse(localStorage.getItem('heartauth_readings') || '[]');
-            readings.unshift(data);
-            if (readings.length > 100) readings.length = 100;
-            localStorage.setItem('heartauth_readings', JSON.stringify(readings));
-            localStorage.setItem('heartauth_latest', JSON.stringify(data));
+function detrend(s){const w=20,d=[];for(let i=0;i<s.length;i++){let sum=0,c=0;for(let j=Math.max(0,i-w/2);j<Math.min(s.length,i+w/2);j++){sum+=s[j];c++;}const avg=sum/c;d.push(s[i]-avg);}return d;}
+function findPeaks(s){const p=[];const th=0.02;for(let i=2;i<s.length-2;i++){if(s[i]>s[i-1]&&s[i]>s[i-2]&&s[i]>s[i+1]&&s[i]>s[i+2]&&s[i]>th){p.push(i);}}return p;}
 
-            renderHistory();
-            updateChart(history);
-            toast('✅ Recorded! ' + S.userName + ' - ' + emotion + ' (' + score + ') · HR: ' + S.hrValue + ' BPM');
-        }
+function updateEmotions(){
+    const e={Happy:S.AU12*0.8+(1-S.AU1)*0.2+Math.max(0,S.mouthMAR-0.1)*0.3,Sad:S.AU1*0.6+(1-S.AU12)*0.4,Angry:S.AU1*0.5+(1-S.mouthOpenness)*0.4+(1-S.AU12)*0.3,Surprised:S.AU25*0.5+S.AU1*0.3+(1-S.AU12)*0.2,Calm:(1-S.AU1)*0.4+(1-S.AU25)*0.3+(1-Math.abs(S.AU12-0.3))*0.3,Neutral:0.2,Excited:S.AU12*0.5+S.AU1*0.3+S.AU25*0.2,Worried:S.AU1*0.5+(1-S.AU12)*0.4,Tired:(1-S.AU1)*0.4+(1-S.AU25)*0.4,Grateful:S.AU12*0.5+(1-S.AU1)*0.3+0.2,Loved:S.AU12*0.6+(1-S.AU1)*0.3,Confused:S.AU1*0.3+S.AU25*0.3,Stressed:S.AU1*0.4+(1-S.mouthOpenness)*0.3+(1-S.AU12)*0.3,Focused:(1-S.AU1)*0.4+(1-S.AU25)*0.3+(S.AU12*0.2)};
+    const sw=Math.min(1,(S.stability||50)/100);for(let k in e)e[k]*=sw;
+    const alpha=0.35;if(!S.emotions||Object.keys(S.emotions).length===0)S.emotions=e;else{for(let k in e)S.emotions[k]=S.emotions[k]*(1-alpha)+e[k]*alpha;}
+    const total=Object.values(S.emotions).reduce((a,b)=>a+b,0)||1;for(let k in S.emotions)S.emotions[k]/=total;
+    let dom='Neutral',max=0;for(let k in S.emotions){if(S.emotions[k]>max){max=S.emotions[k];dom=k;}}if(max<0.12)dom='Neutral';
+    S.dominantEmotion=dom;S.emotionConfidence=Math.round(max*100);
+    const emoji=EMOTION_EMOJI[dom]||'😐';const desc=EMOTION_DESC[dom]||"You seem balanced right now.";
+    document.getElementById('bigEmoji').textContent=emoji;document.getElementById('emotionName').textContent=dom;document.getElementById('emotionDesc').textContent=desc;document.getElementById('emotionConf').textContent='Confidence: '+S.emotionConfidence+'%';
+    const sorted=Object.entries(S.emotions).sort((a,b)=>b[1]-a[1]).slice(0,6);const grid=document.getElementById('emotionGrid');grid.innerHTML=sorted.map(([em,val])=>`<div class="emotion-item ${em===dom?'active':''}"><div class="em-name">${EMOTION_EMOJI[em]||'😐'} ${em}</div><div class="em-pct">${Math.round(val*100)}%</div><div class="em-bar"><div class="em-fill" style="width:${Math.round(val*100)}%;"></div></div></div>`).join('');
+    const stressFromEmotion=['Angry','Stressed','Worried'].includes(dom)?70:['Sad','Confused','Tired'].includes(dom)?50:20;
+    S.stressLevel=Math.round(S.stressLevel*0.7+(stressFromEmotion+S.voiceStress*0.3)*0.3);S.stressLevel=Math.min(100,Math.max(0,S.stressLevel));
+    document.getElementById('stressVal').textContent=S.stressLevel+'%';const ss=S.stressLevel>65?'High 😰':S.stressLevel>35?'Moderate 😐':'Calm 😌';document.getElementById('stressState').textContent=ss;document.getElementById('stressBar').style.width=S.stressLevel+'%';document.getElementById('stressBar').style.background=S.stressLevel>65?'#FF4C5E':S.stressLevel>35?'#FFB830':'#00C48C';
+    calcWellbeing();updateRecs();
+}
 
-        // ─── CAMERA ────────────────────────────────────────────
-        let faceMesh = null,
-            camera = null;
+function calcWellbeing(){
+    const scores={Happy:92,Calm:88,Neutral:62,Surprised:58,Sad:28,Angry:18,Excited:85,Worried:35,Tired:40,Grateful:90,Loved:95,Confused:45,Stressed:20,Focused:80,Peaceful:95,Joyful:90};
+    const em=scores[S.dominantEmotion]||60;const hr=Math.max(15,100-Math.abs(S.hrValue-66)*2.5);const blink=Math.max(15,100-Math.abs(S.blinkRate-17)*4);const voice=Math.max(10,100-S.voiceStress*0.8);const stab=Math.max(10,S.stability||50);
+    const factors=[{value:em,weight:0.30},{value:hr,weight:0.25},{value:blink,weight:0.15},{value:voice,weight:0.15},{value:stab,weight:0.15}];
+    let total=0,wSum=0;factors.forEach(f=>{total+=f.value*f.weight;wSum+=f.weight;});S.wellbeing=Math.round(total/wSum);
+    const state=S.wellbeing>=70?'Calm 😌':S.wellbeing>=40?'Moderate 😐':'Stressed 😰';
+    document.getElementById('wellbeingVal').textContent=S.wellbeing;document.getElementById('wellbeingState').textContent=state;document.getElementById('wellbeingBar').style.width=S.wellbeing+'%';document.getElementById('wellbeingBar').style.background=S.wellbeing>=70?'#00C48C':S.wellbeing>=40?'#FFB830':'#FF4C5E';
+}
 
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                videoEl.srcObject = stream;
-                videoEl.style.display = 'block';
-                document.getElementById('camPlaceholder').style.display = 'none';
-                await videoEl.play();
+function updateRecs(){const list=RECS[S.dominantEmotion]||RECS.Neutral;document.getElementById('recsList').innerHTML=list.map((r,i)=>`<div class="rec-item"><div class="rec-num">${i+1}</div><span>${r}</span></div>`).join('');}
+function updateUI(){if(S.hrValue>0){document.getElementById('hrDisplay').textContent=S.hrValue;document.getElementById('hrDisplay').style.color=S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';const p=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));document.getElementById('hrBar').style.width=p+'%';}document.getElementById('voiceStress').textContent=Math.round(S.voiceStress);document.getElementById('voiceStressBar').style.width=Math.round(S.voiceStress)+'%';const sc=S.voiceStress>65?'#FF4C5E':S.voiceStress>35?'#FFB830':'#00C48C';document.getElementById('voiceStressBar').style.background=sc;}
 
-                S.cameraOn = true;
-                setStatus('dotCamera', 'active', 'lblCamera', 'Live');
-                document.getElementById('btnStart').disabled = true;
-                document.getElementById('btnStop').disabled = false;
-                document.getElementById('btnAnalyze').disabled = false;
+async function toggleMic(){if(S.micOn){stopMic();}else{await startMic();}}
+async function startMic(){try{S.micStream=await navigator.mediaDevices.getUserMedia({audio:true});S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();const source=S.audioCtx.createMediaStreamSource(S.micStream);S.analyser=S.audioCtx.createAnalyser();S.analyser.fftSize=2048;S.analyser.smoothingTimeConstant=0.5;source.connect(S.analyser);S.micOn=true;document.getElementById('btnMic').textContent='🔇 Disable Mic';setStatus('dotVoice','active','lblVoice','Mic On');audioLoop();}catch(e){toast('❌ Microphone access denied');}}
+function stopMic(){if(S.micStream){S.micStream.getTracks().forEach(t=>t.stop());S.micStream=null;}if(S.audioCtx){S.audioCtx.close();S.audioCtx=null;}S.micOn=false;S.analyser=null;document.getElementById('btnMic').textContent='🎙️ Enable Mic';setStatus('dotVoice','','lblVoice','Mic Off');}
+function audioLoop(){if(!S.micOn||!S.analyser)return;setTimeout(audioLoop,60);const fd=new Uint8Array(S.analyser.frequencyBinCount);const td=new Float32Array(S.analyser.fftSize);S.analyser.getByteFrequencyData(fd);S.analyser.getFloatTimeDomainData(td);let sq=0;for(let i=0;i<td.length;i++)sq+=td[i]*td[i];S.voiceRMS=Math.sqrt(sq/td.length);const voiced=S.voiceRMS>0.01;let pb=0,pv=0;const sr=S.audioCtx.sampleRate;const lb=Math.floor(80/(sr/2048));const hb=Math.floor(400/(sr/2048));for(let i=lb;i<Math.min(hb,fd.length);i++){if(fd[i]>pv){pv=fd[i];pb=i;}}const pitch=pb*(sr/2048);if(voiced&&pv>25){S.voicePitch=S.voicePitch*0.7+pitch*0.3;}const ps=Math.max(0,Math.min(1,(S.voicePitch-120)/200));const rs=Math.min(1,S.voiceRMS*15);S.voiceStress=S.voiceStress*0.85+(ps*0.5+rs*0.5)*100*0.15;const bs=Math.floor(fd.length/32);for(let b=0;b<32;b++){let sum=0;for(let k=b*bs;k<(b+1)*bs&&k<fd.length;k++)sum+=fd[k];S.voiceBars[b]=S.voiceBars[b]*0.5+(sum/bs/255)*0.5;}updateVoiceBars();document.getElementById('voiceStress').textContent=Math.round(S.voiceStress);document.getElementById('voiceStressBar').style.width=Math.round(S.voiceStress)+'%';const sc=S.voiceStress>65?'#FF4C5E':S.voiceStress>35?'#FFB830':'#00C48C';document.getElementById('voiceStressBar').style.background=sc;document.getElementById('voicePitch').textContent=S.voicePitch?Math.round(S.voicePitch)+' Hz':'—';document.getElementById('voiceStatus').textContent=voiced?'🔊 Active':'⚪ Silent';}
+function updateVoiceBars(){const row=document.getElementById('voiceBarsRow');const bars=row.querySelectorAll('.voice-bar');for(let i=0;i<bars.length&&i<32;i++){const h=Math.max(2,S.voiceBars[i]*40);bars[i].style.height=h+'px';const s=Math.min(1,S.voiceStress/100);const r=Math.round(100+s*155);const g=Math.round(200-s*150);const b=Math.round(255-s*200);bars[i].style.background='rgb('+r+','+g+','+b+')';}}
 
-                faceMesh = new FaceMesh({
-                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-                });
+function analyzeAndSend(){
+    if(!S.userName){toast('⚠️ Name is required!');document.getElementById('nameBox').className='name-box required';return;}
+    if(!S.faceDetected){toast('⚠️ No face detected!');return;}
+    const emotion=S.dominantEmotion;const emoji=EMOTION_EMOJI[emotion]||'😐';const score=S.wellbeing;
+    const now=new Date();const history=JSON.parse(localStorage.getItem('heartauth_history')||'[]');
+    history.unshift({date:now.toLocaleDateString(),time:now.toLocaleTimeString(),emotion:emotion,score:score,bpm:S.hrValue,stress:S.stressLevel,blinks:S.blinkCount});
+    if(history.length>20)history.length=20;localStorage.setItem('heartauth_history',JSON.stringify(history));
+    const data={name:S.userName,timestamp:now.toISOString(),hr:S.hrValue,emotion:emotion,emotionEmoji:emoji,wellbeing:score,stress:S.stressLevel,blinks:S.blinkCount,blinkRate:S.blinkRate,emotions:S.emotions,au1:Math.round(S.AU1*100),au12:Math.round(S.AU12*100),au25:Math.round(S.AU25*100),hrConfidence:S.hrConfidence};
+    const readings=JSON.parse(localStorage.getItem('heartauth_readings')||'[]');
+    readings.unshift(data);if(readings.length>100)readings.length=100;
+    localStorage.setItem('heartauth_readings',JSON.stringify(readings));
+    localStorage.setItem('heartauth_latest',JSON.stringify(data));
+    renderHistory();updateChart(history);
+    toast('✅ Recorded! '+S.userName+' - '+emotion+' ('+score+') · HR: '+S.hrValue+' BPM');
+}
 
-                faceMesh.setOptions({
-                    maxNumFaces: 1,
-                    refineLandmarks: true,
-                    minDetectionConfidence: 0.65,
-                    minTrackingConfidence: 0.6
-                });
+let faceMesh=null,camera=null;
+async function startCamera(){
+    try{
+        const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480}}});
+        videoEl.srcObject=stream;videoEl.style.display='block';document.getElementById('camPlaceholder').style.display='none';await videoEl.play();
+        S.cameraOn=true;setStatus('dotCamera','active','lblCamera','Live');document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;document.getElementById('btnAnalyze').disabled=false;
+        faceMesh=new FaceMesh({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+        faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.65,minTrackingConfidence:0.6});
+        faceMesh.onResults(onResults);
+        camera=new Camera(videoEl,{onFrame:async()=>{if(S.cameraOn&&faceMesh){await faceMesh.send({image:videoEl});S.frameCount++;if(Date.now()-S.fpsTimer>1000){S.fps=S.frameCount;S.frameCount=0;S.fpsTimer=Date.now();document.getElementById('badgeFPS').textContent='FPS: '+S.fps;}}},width:640,height:480});
+        camera.start();toast('📷 Camera started');
+    }catch(e){toast('❌ Camera access denied');console.error(e);}
+}
+function stopCamera(){S.cameraOn=false;if(camera){camera.stop();camera=null;}if(videoEl.srcObject){videoEl.srcObject.getTracks().forEach(t=>t.stop());videoEl.srcObject=null;}videoEl.style.display='none';document.getElementById('camPlaceholder').style.display='flex';document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;document.getElementById('btnAnalyze').disabled=true;setStatus('dotCamera','','lblCamera','Off');setStatus('dotFace','','lblFace','No Face');setStatus('dotHR','','lblHR','HR: —');toast('⏹ Camera stopped');}
 
-                faceMesh.onResults(onResults);
+let chartInstance=null;
+function renderHistory(){const h=JSON.parse(localStorage.getItem('heartauth_history')||'[]');const tb=document.getElementById('historyBody');document.getElementById('histCount').textContent=h.length+' sessions';if(!h.length){tb.innerHTML='<tr><td colspan="7" class="empty-history">No sessions recorded</td></tr>';return;}tb.innerHTML=h.map((e,i)=>{const cls=e.score>=70?'high':e.score>=40?'medium':'low';return `<tr><td>${i+1}</td><td>${e.date} ${e.time}</td><td>${e.emotion}</td><td><span class="hist-score ${cls}">${e.score}</span></td><td>${e.bpm}</td><td>${e.stress}%</td><td>${e.blinks}</td></tr>`;}).join('');}
+function updateChart(h){const ctx=document.getElementById('wellbeingChart').getContext('2d');if(chartInstance)chartInstance.destroy();if(!h||h.length===0){chartInstance=new Chart(ctx,{type:'line',data:{labels:['No Data'],datasets:[{label:'Wellbeing Score',data:[0],borderColor:'#00E5FF'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8A93B2',font:{size:10}}}},scales:{y:{min:0,max:100,grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A'}},x:{grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A',font:{size:8}}}}}});return;}const r=h.slice().reverse();chartInstance=new Chart(ctx,{type:'line',data:{labels:r.map(e=>e.date+' '+e.time),datasets:[{label:'Wellbeing Score',data:r.map(e=>e.score),borderColor:'#00E5FF',backgroundColor:'rgba(0,229,255,0.1)',fill:true,tension:0.4,pointBackgroundColor:r.map(e=>e.score>=70?'#00C48C':e.score>=40?'#FFB830':'#FF4C5E'),pointRadius:5,pointBorderColor:'#070A14',pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8A93B2',font:{size:10}}},tooltip:{callbacks:{label:(ctx)=>{const item=r[ctx.dataIndex];return 'Score: '+ctx.parsed.y+' · Emotion: '+item.emotion+' · BPM: '+item.bpm;}}}},scales:{y:{min:0,max:100,grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A'}},x:{grid:{color:'rgba(42,52,85,0.3)'},ticks:{color:'#555F7A',maxRotation:30,font:{size:8}}}}}});}
+function clearHistory(){if(!confirm('Clear all history?'))return;localStorage.removeItem('heartauth_history');renderHistory();updateChart([]);toast('🗑 History cleared');}
 
-                camera = new Camera(videoEl, {
-                    onFrame: async () => {
-                        if (S.cameraOn && faceMesh) {
-                            await faceMesh.send({ image: videoEl });
-                            S.frameCount++;
-                            if (Date.now() - S.fpsTimer > 1000) {
-                                S.fps = S.frameCount;
-                                S.frameCount = 0;
-                                S.fpsTimer = Date.now();
-                                document.getElementById('badgeFPS').textContent = 'FPS: ' + S.fps;
-                            }
-                        }
-                    },
-                    width: 640,
-                    height: 480
-                });
+function buildVoiceBars(){const row=document.getElementById('voiceBarsRow');row.innerHTML='';for(let i=0;i<32;i++){const bar=document.createElement('div');bar.className='voice-bar';bar.style.height='2px';row.appendChild(bar);}}
 
-                camera.start();
-                toast('📷 Camera started');
-
-            } catch (e) {
-                toast('❌ Camera access denied');
-                console.error(e);
-            }
-        }
-
-        function stopCamera() {
-            S.cameraOn = false;
-            if (camera) { camera.stop();
-                camera = null; }
-            if (videoEl.srcObject) {
-                videoEl.srcObject.getTracks().forEach(t => t.stop());
-                videoEl.srcObject = null;
-            }
-            videoEl.style.display = 'none';
-            document.getElementById('camPlaceholder').style.display = 'flex';
-            document.getElementById('btnStart').disabled = false;
-            document.getElementById('btnStop').disabled = true;
-            document.getElementById('btnAnalyze').disabled = true;
-            setStatus('dotCamera', '', 'lblCamera', 'Off');
-            setStatus('dotFace', '', 'lblFace', 'No Face');
-            setStatus('dotHR', '', 'lblHR', 'HR: —');
-            toast('⏹ Camera stopped');
-        }
-
-        // ─── HISTORY ───────────────────────────────────────────
-        let chartInstance = null;
-
-        function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-            const tbody = document.getElementById('historyBody');
-            document.getElementById('histCount').textContent = history.length + ' sessions';
-
-            if (!history.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-history">No sessions recorded</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = history.map((e, i) => {
-                const cls = e.score >= 70 ? 'high' : e.score >= 40 ? 'medium' : 'low';
-                return `<tr>
-                        <td>${i+1}</td>
-                        <td>${e.date} ${e.time}</td>
-                        <td>${e.emotion}</td>
-                        <td><span class="hist-score ${cls}">${e.score}</span></td>
-                        <td>${e.bpm}</td>
-                        <td>${e.stress}%</td>
-                        <td>${e.blinks}</td>
-                    </tr>`;
-            }).join('');
-        }
-
-        function updateChart(history) {
-            const ctx = document.getElementById('wellbeingChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-
-            if (!history || history.length === 0) {
-                chartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: ['No Data'],
-                        datasets: [{ label: 'Wellbeing Score', data: [0], borderColor: '#00E5FF' }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: '#8A93B2', font: { size: 10 } } } },
-                        scales: {
-                            y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
-                            x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', font: { size: 8 } } }
-                        }
-                    }
-                });
-                return;
-            }
-
-            const reversed = history.slice().reverse();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: reversed.map(e => e.date + ' ' + e.time),
-                    datasets: [{
-                        label: 'Wellbeing Score',
-                        data: reversed.map(e => e.score),
-                        borderColor: '#00E5FF',
-                        backgroundColor: 'rgba(0,229,255,0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: reversed.map(e =>
-                            e.score >= 70 ? '#00C48C' : e.score >= 40 ? '#FFB830' : '#FF4C5E'
-                        ),
-                        pointRadius: 5,
-                        pointBorderColor: '#070A14',
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#8A93B2', font: { size: 10 } } },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => {
-                                    const item = reversed[ctx.dataIndex];
-                                    return 'Score: ' + ctx.parsed.y + ' · Emotion: ' + item.emotion + ' · BPM: ' +
-                                        item.bpm;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A' } },
-                        x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555F7A', maxRotation: 30,
-                                font: { size: 8 } } }
-                    }
-                }
-            });
-        }
-
-        function clearHistory() {
-            if (!confirm('Clear all history?')) return;
-            localStorage.removeItem('heartauth_history');
-            renderHistory();
-            updateChart([]);
-            toast('🗑 History cleared');
-        }
-
-        // ─── BUILD UI ──────────────────────────────────────────
-        function buildVoiceBars() {
-            const row = document.getElementById('voiceBarsRow');
-            row.innerHTML = '';
-            for (let i = 0; i < 32; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'voice-bar';
-                bar.style.height = '2px';
-                row.appendChild(bar);
-            }
-        }
-
-        // ─── INIT ──────────────────────────────────────────────
-        function init() {
-            buildVoiceBars();
-
-            const history = JSON.parse(localStorage.getItem('heartauth_history') || '[]');
-            renderHistory();
-            updateChart(history);
-
-            document.getElementById('btnStart').addEventListener('click', startCamera);
-            document.getElementById('btnStop').addEventListener('click', stopCamera);
-            document.getElementById('btnAnalyze').addEventListener('click', analyzeAndSend);
-            document.getElementById('btnClear').addEventListener('click', clearHistory);
-            document.getElementById('btnMic').addEventListener('click', toggleMic);
-
-            // Auto-start
-            setTimeout(startCamera, 1000);
-            toast('🧠 HEARTAUTH loaded — Position your face!');
-        }
-
-        init();
-    </script>
+function init(){buildVoiceBars();const h=JSON.parse(localStorage.getItem('heartauth_history')||'[]');renderHistory();updateChart(h);document.getElementById('btnStart').addEventListener('click',startCamera);document.getElementById('btnStop').addEventListener('click',stopCamera);document.getElementById('btnAnalyze').addEventListener('click',analyzeAndSend);document.getElementById('btnClear').addEventListener('click',clearHistory);document.getElementById('btnMic').addEventListener('click',toggleMic);setTimeout(startCamera,1000);toast('🧠 HEARTAUTH loaded — Position your face!');}
+init();
+</script>
 </body>
 </html>
