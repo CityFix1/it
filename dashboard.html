@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HEARTAUTH · Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg:#0a0e1a;--card:#131b33;--card2:#1a2444;--border:#2a3a66;--cyan:#00e5ff;--jade:#00c48c;--coral:#ff4c5e;--amber:#ffb830;--purple:#9b6dff;--text:#edf0f7;--text2:#8a93b2;--text3:#555f7a;--font:-apple-system,'Segoe UI',system-ui,sans-serif;--mono:'SF Mono','Consolas',monospace}
+        body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;padding:8px 12px;overflow-x:auto}
+        .container{max-width:1600px;margin:0 auto}
+        .header{display:flex;align-items:center;justify-content:space-between;padding:6px 0 10px;border-bottom:2px solid var(--border);flex-wrap:wrap;gap:6px}
+        .logo{display:flex;align-items:center;gap:8px}
+        .logo-icon{width:32px;height:32px;border-radius:50%;background:rgba(0,229,255,0.1);border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:14px;animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0.2)}50%{box-shadow:0 0 0 10px rgba(0,229,255,0)}}
+        .logo h1{font-size:18px;font-weight:800;background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .logo small{font-size:7px;color:var(--text3);text-transform:uppercase;display:block;-webkit-text-fill-color:var(--text3)}
+        .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .live-badge{font-size:8px;padding:3px 10px;border-radius:10px;background:rgba(0,196,140,0.15);border:1px solid var(--jade);color:var(--jade);animation:blink 1.5s infinite}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+        .count-badge{font-size:10px;color:var(--text2);background:var(--card);padding:4px 12px;border-radius:12px;border:1px solid var(--border)}
+        .btn{padding:5px 14px;border:none;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s}
+        .btn-danger{background:rgba(255,76,94,0.15);color:var(--coral);border:1px solid var(--coral)}
+        .btn-danger:hover{background:rgba(255,76,94,0.25)}
+        .btn-primary{background:linear-gradient(135deg,#00c5dc,#00e5ff);color:#060a14}
+        .btn-primary:hover{transform:scale(1.02)}
+
+        .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin:10px 0}
+        @media(orientation:landscape){.users-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}}
+        @media(max-width:600px){.users-grid{grid-template-columns:1fr}}
+
+        .user-card{background:var(--card);border-radius:14px;padding:12px 12px 10px;border:1px solid var(--border);transition:all 0.3s;position:relative}
+        .user-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+        .user-card .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+        .user-card .name-section{display:flex;align-items:center;gap:6px}
+        .user-card .avatar{font-size:28px;width:40px;height:40px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;border:2px solid var(--border)}
+        .user-card .name{font-size:14px;font-weight:700;color:var(--text)}
+        .user-card .time{font-size:7px;color:var(--text3)}
+        .user-card .state-emoji-box{text-align:center;padding:6px 0 2px;background:var(--card2);border-radius:10px;margin-bottom:6px;border:1px solid var(--border)}
+        .user-card .state-emoji-box .big-state{font-size:44px;display:block}
+        .user-card .state-emoji-box .state-label{font-size:9px;color:var(--text2);font-weight:600}
+        .user-card .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:4px 0}
+        .user-card .stat{text-align:center;background:var(--card2);border-radius:6px;padding:3px 2px}
+        .user-card .stat .val{font-size:15px;font-weight:700;font-family:var(--mono)}
+        .user-card .stat .val.good{color:var(--jade)}
+        .user-card .stat .val.warn{color:var(--amber)}
+        .user-card .stat .val.bad{color:var(--coral)}
+        .user-card .stat .lbl{font-size:6px;text-transform:uppercase;color:var(--text3);letter-spacing:0.3px}
+        .user-card .emotion-bar{display:flex;gap:2px;margin:3px 0;height:3px}
+        .user-card .emotion-bar .seg{flex:1;border-radius:2px;background:var(--border);transition:width 0.5s}
+        .user-card .emotion-bar .seg.happy{background:#00c48c}
+        .user-card .emotion-bar .seg.angry{background:#ff4c5e}
+        .user-card .emotion-bar .seg.calm{background:#00e5ff}
+        .user-card .emotion-bar .seg.sad{background:#4a6cf7}
+        .user-card .emotion-bar .seg.filled{background:var(--cyan)}
+        .user-card .bottom-row{display:flex;justify-content:space-between;align-items:center;margin-top:3px;font-size:8px;color:var(--text2)}
+        .user-card .bottom-row .stress{padding:2px 8px;border-radius:8px;font-weight:600;font-size:8px}
+        .user-card .bottom-row .stress.low{background:rgba(0,196,140,0.15);color:var(--jade)}
+        .user-card .bottom-row .stress.medium{background:rgba(255,184,48,0.15);color:var(--amber)}
+        .user-card .bottom-row .stress.high{background:rgba(255,76,94,0.15);color:var(--coral)}
+        .user-card .alert-badge{position:absolute;top:-4px;right:-4px;font-size:16px;display:none}
+        .user-card .alert-badge.show{display:block}
+        .user-card .emotion-label{font-size:10px;color:var(--text2);font-weight:600}
+
+        .chart-section{background:var(--card);border-radius:14px;padding:10px 14px;margin:10px 0;border:1px solid var(--border)}
+        .chart-section .title{font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px}
+        .chart-section canvas{width:100%!important;height:120px!important}
+
+        .history-section{background:var(--card);border-radius:14px;padding:10px 12px;border:1px solid var(--border);margin:10px 0;overflow-x:auto}
+        .history-section .title{font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;display:flex;justify-content:space-between}
+        .history-section table{width:100%;border-collapse:collapse;font-size:9px}
+        .history-section th{text-align:left;color:var(--text3);font-weight:600;text-transform:uppercase;font-size:7px;padding:3px 5px;border-bottom:1px solid var(--border)}
+        .history-section td{padding:3px 5px;border-bottom:1px solid rgba(42,52,85,0.3);color:var(--text2)}
+        .history-section .name-col{color:var(--text);font-weight:600}
+        .history-section .emotion-col{font-size:16px}
+        .history-section .score-col{font-weight:700}
+        .history-section .score-col.good{color:var(--jade)}
+        .history-section .score-col.warn{color:var(--amber)}
+        .history-section .score-col.bad{color:var(--coral)}
+        .empty-state{text-align:center;padding:30px 0;color:var(--text3);font-size:12px}
+        .empty-state .big{font-size:40px;display:block;margin-bottom:6px}
+        .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:6px 16px;font-size:10px;color:var(--text);transition:transform 0.3s ease;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.6);white-space:nowrap}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">📊</div>
+            <div>
+                <h1>HEARTAUTH</h1>
+                <small>Live Dashboard · All Users</small>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="live-badge">● LIVE</span>
+            <span class="count-badge" id="userCount">0 users</span>
+            <span class="count-badge" id="readingCount">0 readings</span>
+            <button class="btn btn-primary" id="btnRefresh">🔄 Refresh</button>
+            <button class="btn btn-danger" id="btnClear">🗑️ Clear</button>
+        </div>
+    </div>
+
+    <div class="users-grid" id="usersGrid">
+        <div class="empty-state"><span class="big">📭</span>No readings yet. Scan from the frontend!</div>
+    </div>
+
+    <div class="chart-section">
+        <div class="title">📈 Wellbeing Trend (All Users)</div>
+        <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="history-section">
+        <div class="title"><span>📋 All Readings</span><span id="historyCount">0</span></div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Time</th><th>Name</th><th>State</th><th>Score</th><th>BPM</th><th>Stress</th><th>Blinks</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="7" class="empty-state">No readings</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// HEARTAUTH DASHBOARD · Different Emojis for Each User
+// ============================================================
+
+let chartInstance = null;
+
+// Different emojis for different users - each person gets a unique one
+const USER_EMOJIS = {
+    // Common names with unique emojis
+    'Hammad': '🧠',
+    'Sayed': '🦅',
+    'Mohammed': '🌙',
+    'Ahmed': '⭐',
+    'Ali': '🦁',
+    'Fatima': '🌸',
+    'Aisha': '🌺',
+    'Zayed': '🦅',
+    'Rashid': '🏹',
+    'Khalid': '⚔️',
+    'Sara': '🌹',
+    'Noor': '☀️',
+    'Layla': '🌙',
+    'Omar': '📚',
+    'Hassan': '🏛️',
+    // Fallback for any other name
+    'default': '🧘'
+};
+
+const STATE_EMOJIS = {
+    'Happy': '😄',
+    'Sad': '😢',
+    'Angry': '😠',
+    'Surprised': '😲',
+    'Calm': '😌',
+    'Neutral': '😐',
+    'Excited': '🤩',
+    'Worried': '😰',
+    'Tired': '😴',
+    'Grateful': '🙏',
+    'Loved': '🥰',
+    'Confused': '🤔',
+    'Stressed': '😫',
+    'Focused': '🧘',
+    'Peaceful': '🕊️',
+    'Joyful': '🥳'
+};
+
+function getUserEmoji(name) {
+    // Check if name has a specific emoji assigned
+    for (let [key, emoji] of Object.entries(USER_EMOJIS)) {
+        if (name.toLowerCase().includes(key.toLowerCase())) {
+            return emoji;
+        }
+    }
+    // Generate a deterministic emoji based on name hash
+    const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    const emojiList = ['🧠', '🦅', '⭐', '🦁', '🌸', '🌺', '🌙', '☀️', '🌹', '🏹', '⚔️', '📚', '🏛️', '🧘', '🕊️', '🎯', '🌟', '💪', '🔥', '🌈'];
+    return emojiList[hash % emojiList.length];
+}
+
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function getReadings() {
+    return JSON.parse(localStorage.getItem('heartauth_readings') || '[]');
+}
+
+function getUsers(readings) {
+    const users = {};
+    readings.forEach(r => {
+        const name = r.name || 'Anonymous';
+        if (!users[name]) {
+            users[name] = {
+                name: name,
+                readings: [],
+                emoji: getUserEmoji(name),
+                stateEmoji: STATE_EMOJIS[r.emotion] || '😐'
+            };
+        }
+        users[name].readings.push(r);
+        if (r.emotionEmoji) users[name].stateEmoji = r.emotionEmoji;
+        if (r.emotion && STATE_EMOJIS[r.emotion]) users[name].stateEmoji = STATE_EMOJIS[r.emotion];
+    });
+    Object.values(users).forEach(u => {
+        u.readings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        u.latest = u.readings[0] || null;
+        if (u.latest && u.latest.emotion && STATE_EMOJIS[u.latest.emotion]) {
+            u.stateEmoji = STATE_EMOJIS[u.latest.emotion];
+        }
+        if (u.latest && u.latest.emotionEmoji) {
+            u.stateEmoji = u.latest.emotionEmoji;
+        }
+    });
+    return Object.values(users).sort((a, b) => {
+        const tA = a.latest ? new Date(a.latest.timestamp) : 0;
+        const tB = b.latest ? new Date(b.latest.timestamp) : 0;
+        return tB - tA;
+    });
+}
+
+function renderDashboard() {
+    const readings = getReadings();
+    const users = getUsers(readings);
+
+    document.getElementById('readingCount').textContent = readings.length + ' readings';
+    document.getElementById('userCount').textContent = users.length + ' users';
+    document.getElementById('historyCount').textContent = readings.length + ' readings';
+
+    const grid = document.getElementById('usersGrid');
+    if (users.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><span class="big">📭</span>No readings yet. Scan from the frontend!</div>`;
+    } else {
+        grid.innerHTML = users.map(u => {
+            const r = u.latest;
+            if (!r) return '';
+            const score = r.wellbeing || 50;
+            const scoreClass = score >= 70 ? 'good' : score >= 40 ? 'warn' : 'bad';
+            const stress = r.stress || 0;
+            const stressClass = stress > 65 ? 'high' : stress > 35 ? 'medium' : 'low';
+            const time = new Date(r.timestamp);
+            const emotion = r.emotion || 'Neutral';
+            const stateEmoji = u.stateEmoji || '😐';
+            const userEmoji = u.emoji || '🧠';
+
+            const emotions = r.emotions || {};
+            const sortedEmotions = Object.entries(emotions).sort((a, b) => b[1] - a[1]).slice(0, 4);
+            const emotionBars = sortedEmotions.map(([em, val]) => {
+                const colorClass = ['Happy', 'Joyful', 'Grateful', 'Loved'].includes(em) ? 'happy' :
+                    ['Angry', 'Stressed'].includes(em) ? 'angry' :
+                    ['Calm', 'Peaceful', 'Focused'].includes(em) ? 'calm' :
+                    ['Sad', 'Worried', 'Tired'].includes(em) ? 'sad' : 'filled';
+                return `<div class="seg ${colorClass}" style="width:${Math.round(val * 100)}%;"></div>`;
+            }).join('');
+            const remaining = 4 - sortedEmotions.length;
+            const emptyBars = Array(remaining).fill('<div class="seg"></div>').join('');
+
+            const showAlert = (emotion === 'Angry' || stress > 70);
+
+            return `
+                <div class="user-card">
+                    ${showAlert ? '<div class="alert-badge show">🔴</div>' : ''}
+                    <div class="state-emoji-box">
+                        <span class="big-state">${stateEmoji}</span>
+                        <span class="state-label">${emotion}</span>
+                    </div>
+                    <div class="top">
+                        <div class="name-section">
+                            <div class="avatar">${userEmoji}</div>
+                            <div>
+                                <div class="name">${u.name}</div>
+                                <div class="time">${time.toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                        <span class="emotion-label">${emotion}</span>
+                    </div>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="val ${scoreClass}">${score}</div>
+                            <div class="lbl">Wellbeing</div>
+                        </div>
+                        <div class="stat">
+                            <div class="val ${r.hr > 85 ? 'bad' : r.hr > 70 ? 'warn' : 'good'}">${r.hr || '--'}</div>
+                            <div class="lbl">BPM</div>
+                        </div>
+                        <div class="stat">
+                            <div class="val">${r.blinkRate || 0}</div>
+                            <div class="lbl">Blinks</div>
+                        </div>
+                    </div>
+                    <div class="emotion-bar">${emotionBars}${emptyBars}</div>
+                    <div class="bottom-row">
+                        <span>${stateEmoji} ${emotion}</span>
+                        <span class="stress ${stressClass}">${stress}% Stress</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateChart(readings);
+
+    const tbody = document.getElementById('historyBody');
+    if (readings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No readings</td></tr>';
+    } else {
+        tbody.innerHTML = readings.slice(0, 30).map(r => {
+            const score = r.wellbeing || 50;
+            const cls = score >= 70 ? 'good' : score >= 40 ? 'warn' : 'bad';
+            const time = new Date(r.timestamp);
+            const stateEmoji = r.emotionEmoji || '😐';
+            const name = r.name || 'Anonymous';
+            const userEmoji = getUserEmoji(name);
+            return `<tr>
+                <td>${time.toLocaleTimeString()}</td>
+                <td class="name-col">${userEmoji} ${name}</td>
+                <td class="emotion-col">${stateEmoji}</td>
+                <td class="score-col ${cls}">${score}</td>
+                <td>${r.hr || '--'}</td>
+                <td>${r.stress || 0}%</td>
+                <td>${r.blinkRate || 0}</td>
+            </tr>`;
+        }).join('');
+    }
+}
+
+function updateChart(readings) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (chartInstance) { chartInstance.destroy();
+        chartInstance = null; }
+    if (readings.length === 0) {
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['No Data'],
+                datasets: [{ label: 'Wellbeing', data: [0], borderColor: '#00e5ff', backgroundColor: 'rgba(0,229,255,0.1)',
+                    fill: true, tension: 0.3, pointBackgroundColor: '#00e5ff' }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#8a93b2', font: { size: 8 } } } },
+                scales: {
+                    y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555f7a',
+                            font: { size: 7 } } },
+                    x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555f7a', font: { size: 6 },
+                            maxRotation: 30 } }
+                }
+            }
+        });
+        return;
+    }
+    const reversed = readings.slice().reverse().slice(0, 30);
+    const labels = reversed.map(r => { const t = new Date(r.timestamp); return t.toLocaleTimeString(); });
+    const scores = reversed.map(r => r.wellbeing || 50);
+    const colors = scores.map(s => s >= 70 ? '#00c48c' : s >= 40 ? '#ffb830' : '#ff4c5e');
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Wellbeing Score',
+                data: scores,
+                borderColor: '#00e5ff',
+                backgroundColor: 'rgba(0,229,255,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: colors,
+                pointBorderColor: '#0a0e1a',
+                pointBorderWidth: 1.5,
+                pointRadius: 3.5,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#8a93b2', font: { size: 8 } } },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const idx = ctx.dataIndex;
+                            const item = reversed[idx];
+                            return 'Score: ' + ctx.parsed.y + ' · ' + (item.emotion || 'Neutral') + ' · ' + (item
+                                .name || 'Anonymous');
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { min: 0, max: 100, grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555f7a',
+                        font: { size: 7 } } },
+                x: { grid: { color: 'rgba(42,52,85,0.3)' }, ticks: { color: '#555f7a', font: { size: 6 },
+                        maxRotation: 30 } }
+            }
+        }
+    });
+}
+
+function clearAll() {
+    if (!confirm('Clear all readings from dashboard?')) return;
+    localStorage.removeItem('heartauth_readings');
+    localStorage.removeItem('heartauth_latest');
+    renderDashboard();
+    toast('🗑️ Dashboard cleared');
+}
+
+document.getElementById('btnRefresh').addEventListener('click', () => { renderDashboard();
+    toast('🔄 Refreshed'); });
+document.getElementById('btnClear').addEventListener('click', clearAll);
+
+setInterval(renderDashboard, 2000);
+renderDashboard();
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'heartauth_readings' || e.key === 'heartauth_latest') renderDashboard();
+});
+
+toast('📊 Dashboard live — auto-refresh every 2s');
+</script>
+</body>
+</html>
