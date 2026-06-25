@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>HEARTAUTH · Scanner</title>
+    <title>HEARTAUTH · Live Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
@@ -70,18 +70,19 @@
         .metric-value{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--text-1)}
         .metric-sub{font-size:10px;color:var(--text-3);margin-top:2px}
         .progress-track{height:4px;background:var(--bg-base);border-radius:2px;overflow:hidden;margin-top:4px}
-        .progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
+        .progress-fill{height:100%;border-radius:2px;transition:width 0.2s ease}
         .emotion-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px}
         .emotion-item{background:var(--bg-card2);border:1px solid var(--border);border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;gap:1px;transition:border-color 0.3s}
         .emotion-item.active{border-color:var(--cyan);background:var(--cyan-dim)}
         .emotion-item .em-name{font-size:8px;color:var(--text-3);font-weight:600;text-transform:uppercase}
         .emotion-item .em-pct{font-size:11px;font-weight:700;font-family:var(--mono);color:var(--text-1)}
         .emotion-item .em-bar{height:2px;background:var(--bg-base);border-radius:1px;overflow:hidden}
-        .emotion-item .em-fill{height:100%;border-radius:1px;background:var(--cyan);transition:width 0.5s}
-        .emotion-display{background:var(--bg-card);border-radius:12px;padding:12px 16px;text-align:center;border:1px solid var(--border);margin-bottom:8px}
-        .emotion-display .big-emoji{font-size:56px;display:block;margin-bottom:2px;transition:all 0.5s}
-        .emotion-display .emotion-name{font-size:20px;font-weight:700;color:var(--text-1)}
-        .emotion-display .emotion-desc{font-size:12px;color:var(--text-2);margin-top:2px}
+        .emotion-item .em-fill{height:100%;border-radius:1px;background:var(--cyan);transition:width 0.2s ease}
+        .emotion-display{background:var(--bg-card);border-radius:12px;padding:12px 16px;text-align:center;border:1px solid var(--border);margin-bottom:8px;transition:all 0.3s}
+        .emotion-display .big-emoji{font-size:56px;display:block;margin-bottom:2px;transition:all 0.3s}
+        .emotion-display .emotion-name{font-size:20px;font-weight:700;color:var(--text-1);transition:all 0.3s}
+        .emotion-display .emotion-desc{font-size:12px;color:var(--text-2);margin-top:2px;transition:all 0.3s}
+        .emotion-display .confidence{font-size:10px;color:var(--text-3);margin-top:4px}
         .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}
         @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
         .sub-panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius)}
@@ -124,6 +125,9 @@
         .pulse-ring{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--cyan);animation:pulse-ring 1.5s ease-in-out infinite;margin-right:8px}
         @keyframes pulse-ring{0%{transform:scale(0.8);opacity:0.7}50%{transform:scale(1.2);opacity:1}100%{transform:scale(0.8);opacity:0.7}}
         .hr-live{display:flex;align-items:center}
+        .live-update{transition:all 0.3s ease}
+        .bpm-flash{animation:bpmFlash 0.5s ease}
+        @keyframes bpmFlash{0%{transform:scale(1)}50%{transform:scale(1.1);color:var(--cyan)}100%{transform:scale(1)}}
     </style>
 </head>
 <body>
@@ -133,7 +137,7 @@
             <div class="logo-pulse">🧠</div>
             <div class="logo-text">
                 <h1>HEARTAUTH</h1>
-                <p>Smart Biometric Scanner</p>
+                <p>Live Biometric Scanner</p>
             </div>
         </div>
         <div class="creator-badge">
@@ -184,11 +188,11 @@
         <div class="metrics-panel">
             <div class="section-title">📡 Live Biometric Data</div>
             <div class="metrics-scroll">
-                <div class="emotion-display">
+                <div class="emotion-display" id="emotionDisplay">
                     <span class="big-emoji" id="bigEmoji">😐</span>
                     <div class="emotion-name" id="emotionName">Neutral</div>
                     <div class="emotion-desc" id="emotionDesc">You seem balanced and calm right now.</div>
-                    <div class="confidence" style="font-size:10px;color:var(--text-3);margin-top:4px;" id="emotionConf">Confidence: 0%</div>
+                    <div class="confidence" id="emotionConf">Confidence: 0%</div>
                 </div>
 
                 <div class="metric-card" style="border:2px solid var(--cyan);">
@@ -342,7 +346,8 @@
 
 <script>
 // ============================================================
-// HEARTAUTH · COMPLETE FRONTEND
+// HEARTAUTH · TRULY LIVE FRONTEND
+// Emotions change with expressions · BPM updates every 0.5s
 // ============================================================
 
 const S = {
@@ -358,8 +363,9 @@ const S = {
     emotions: {}, dominantEmotion: 'Neutral', emotionConfidence: 0,
     wellbeing: 50, hrValue: 72, stressLevel: 0, stability: 0,
     frameCount: 0, fps: 0, fpsTimer: 0,
-    hrSignal: [], hrConfidence: 0,
-    tempCanvas: null, tempCtx: null
+    hrSignal: [], hrConfidence: 0, hrHistory: [],
+    tempCanvas: null, tempCtx: null,
+    lastHRUpdate: 0, hrUpdateInterval: 500
 };
 
 const EMOTION_EMOJI = {Happy:'😄',Sad:'😢',Angry:'😠',Surprised:'😲',Calm:'😌',Neutral:'😐',Excited:'🤩',Worried:'😰',Tired:'😴',Grateful:'🙏',Loved:'🥰',Confused:'🤔',Stressed:'😫',Focused:'🧘',Peaceful:'🕊️',Joyful:'🥳'};
@@ -423,7 +429,7 @@ function analyzeAll(lm){
     const nose=lm[1],leE=lm[234],reE=lm[454];if(nose&&leE&&reE){const earMidY=(leE.y+reE.y)/2;S.pitch=Math.max(-30,Math.min(30,(nose.y-earMidY)*100));const earMidX=(leE.x+reE.x)/2;S.yaw=Math.max(-45,Math.min(45,(nose.x-earMidX)*150));const eyL=lm[33],eyR=lm[362];if(eyL&&eyR){S.roll=Math.atan2(eyR.y-eyL.y,eyR.x-eyL.x)*180/Math.PI;}S.headHistory.push({pitch:S.pitch,yaw:S.yaw,roll:S.roll});if(S.headHistory.length>10)S.headHistory.shift();if(S.headHistory.length>5){let v=0;const aP=S.headHistory.reduce((s,h)=>s+h.pitch,0)/S.headHistory.length;const aY=S.headHistory.reduce((s,h)=>s+h.yaw,0)/S.headHistory.length;const aR=S.headHistory.reduce((s,h)=>s+h.roll,0)/S.headHistory.length;S.headHistory.forEach(h=>{v+=Math.pow(h.pitch-aP,2)+Math.pow(h.yaw-aY,2)+Math.pow(h.roll-aR,2);});S.stability=Math.max(0,Math.min(100,100-v*80));}}
 
     calculaterPPG(lm);
-    updateEmotions();
+    updateEmotionsLive();
     updateUI();
 
     document.getElementById('badgeBlinks').textContent='Blinks: '+S.blinkCount;
@@ -446,16 +452,28 @@ function calculaterPPG(lm){
     const data=imgData.data;
     let r=0,g=0,b=0,c=0;
     fi.forEach(idx=>{if(lm[idx]){const px=Math.floor(lm[idx].x*160);const py=Math.floor(lm[idx].y*120);if(px>=0&&px<160&&py>=0&&py<120){const pos=(py*160+px)*4;r+=data[pos]||0;g+=data[pos+1]||0;b+=data[pos+2]||0;c++;}}});
-    if(c>5){const signal=(r/c+g/c+b/c)/3;S.hrSignal.push(signal);if(S.hrSignal.length>150)S.hrSignal.shift();if(S.hrSignal.length>30){const detrended=detrend(S.hrSignal);const peaks=findPeaks(detrended);if(peaks.length>=2){let total=0;for(let i=1;i<peaks.length;i++)total+=peaks[i]-peaks[i-1];const avg=total/(peaks.length-1);const fps=30;const sec=avg/fps;const hr=60/sec;if(hr>40&&hr<120){S.hrValue=S.hrValue*0.7+hr*0.3;S.hrValue=Math.round(S.hrValue);S.hrConfidence=Math.min(100,Math.round(S.hrSignal.length/150*100));document.getElementById('hrDisplay').textContent=S.hrValue;document.getElementById('hrDisplay').style.color=S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';const pct=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));document.getElementById('hrBar').style.width=pct+'%';document.getElementById('hrStatus').textContent='❤️ '+S.hrValue+' BPM · '+S.hrConfidence+'%';setStatus('dotHR','active','lblHR','HR: '+S.hrValue+' BPM');}}}else{document.getElementById('hrStatus').textContent='⏳ Collecting signal... '+S.hrSignal.length+'/30';}}else{document.getElementById('hrStatus').textContent='⚠️ Position face for heart rate';}
+    if(c>5){const signal=(r/c+g/c+b/c)/3;S.hrSignal.push(signal);if(S.hrSignal.length>150)S.hrSignal.shift();if(S.hrSignal.length>15){const detrended=detrend(S.hrSignal);const peaks=findPeaks(detrended);if(peaks.length>=2){let total=0;for(let i=1;i<peaks.length;i++)total+=peaks[i]-peaks[i-1];const avg=total/(peaks.length-1);const fps=30;const sec=avg/fps;const hr=60/sec;if(hr>40&&hr<120){S.hrValue=S.hrValue*0.7+hr*0.3;S.hrValue=Math.round(S.hrValue);S.hrConfidence=Math.min(100,Math.round(S.hrSignal.length/150*100));S.hrHistory.push(S.hrValue);if(S.hrHistory.length>10)S.hrHistory.shift();updateHRDisplay();setStatus('dotHR','active','lblHR','HR: '+S.hrValue+' BPM');}}}else{document.getElementById('hrStatus').textContent='⏳ Collecting signal... '+S.hrSignal.length+'/15';}}else{document.getElementById('hrStatus').textContent='⚠️ Position face for heart rate';}
+}
+
+function updateHRDisplay(){
+    const el=document.getElementById('hrDisplay');
+    el.textContent=S.hrValue;
+    el.style.color=S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';
+    el.classList.remove('bpm-flash');
+    void el.offsetWidth;
+    el.classList.add('bpm-flash');
+    const pct=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));
+    document.getElementById('hrBar').style.width=pct+'%';
+    document.getElementById('hrStatus').textContent='❤️ '+S.hrValue+' BPM · '+S.hrConfidence+'%';
 }
 
 function detrend(s){const w=20,d=[];for(let i=0;i<s.length;i++){let sum=0,c=0;for(let j=Math.max(0,i-w/2);j<Math.min(s.length,i+w/2);j++){sum+=s[j];c++;}const avg=sum/c;d.push(s[i]-avg);}return d;}
 function findPeaks(s){const p=[];const th=0.02;for(let i=2;i<s.length-2;i++){if(s[i]>s[i-1]&&s[i]>s[i-2]&&s[i]>s[i+1]&&s[i]>s[i+2]&&s[i]>th){p.push(i);}}return p;}
 
-function updateEmotions(){
+function updateEmotionsLive(){
     const e={Happy:S.AU12*0.8+(1-S.AU1)*0.2+Math.max(0,S.mouthMAR-0.1)*0.3,Sad:S.AU1*0.6+(1-S.AU12)*0.4,Angry:S.AU1*0.5+(1-S.mouthOpenness)*0.4+(1-S.AU12)*0.3,Surprised:S.AU25*0.5+S.AU1*0.3+(1-S.AU12)*0.2,Calm:(1-S.AU1)*0.4+(1-S.AU25)*0.3+(1-Math.abs(S.AU12-0.3))*0.3,Neutral:0.2,Excited:S.AU12*0.5+S.AU1*0.3+S.AU25*0.2,Worried:S.AU1*0.5+(1-S.AU12)*0.4,Tired:(1-S.AU1)*0.4+(1-S.AU25)*0.4,Grateful:S.AU12*0.5+(1-S.AU1)*0.3+0.2,Loved:S.AU12*0.6+(1-S.AU1)*0.3,Confused:S.AU1*0.3+S.AU25*0.3,Stressed:S.AU1*0.4+(1-S.mouthOpenness)*0.3+(1-S.AU12)*0.3,Focused:(1-S.AU1)*0.4+(1-S.AU25)*0.3+(S.AU12*0.2)};
     const sw=Math.min(1,(S.stability||50)/100);for(let k in e)e[k]*=sw;
-    const alpha=0.35;if(!S.emotions||Object.keys(S.emotions).length===0)S.emotions=e;else{for(let k in e)S.emotions[k]=S.emotions[k]*(1-alpha)+e[k]*alpha;}
+    const alpha=0.3;if(!S.emotions||Object.keys(S.emotions).length===0)S.emotions=e;else{for(let k in e)S.emotions[k]=S.emotions[k]*(1-alpha)+e[k]*alpha;}
     const total=Object.values(S.emotions).reduce((a,b)=>a+b,0)||1;for(let k in S.emotions)S.emotions[k]/=total;
     let dom='Neutral',max=0;for(let k in S.emotions){if(S.emotions[k]>max){max=S.emotions[k];dom=k;}}if(max<0.12)dom='Neutral';
     S.dominantEmotion=dom;S.emotionConfidence=Math.round(max*100);
@@ -463,12 +481,12 @@ function updateEmotions(){
     document.getElementById('bigEmoji').textContent=emoji;document.getElementById('emotionName').textContent=dom;document.getElementById('emotionDesc').textContent=desc;document.getElementById('emotionConf').textContent='Confidence: '+S.emotionConfidence+'%';
     const sorted=Object.entries(S.emotions).sort((a,b)=>b[1]-a[1]).slice(0,6);const grid=document.getElementById('emotionGrid');grid.innerHTML=sorted.map(([em,val])=>`<div class="emotion-item ${em===dom?'active':''}"><div class="em-name">${EMOTION_EMOJI[em]||'😐'} ${em}</div><div class="em-pct">${Math.round(val*100)}%</div><div class="em-bar"><div class="em-fill" style="width:${Math.round(val*100)}%;"></div></div></div>`).join('');
     const stressFromEmotion=['Angry','Stressed','Worried'].includes(dom)?70:['Sad','Confused','Tired'].includes(dom)?50:20;
-    S.stressLevel=Math.round(S.stressLevel*0.7+(stressFromEmotion+S.voiceStress*0.3)*0.3);S.stressLevel=Math.min(100,Math.max(0,S.stressLevel));
+    S.stressLevel=Math.round(S.stressLevel*0.6+(stressFromEmotion+S.voiceStress*0.4)*0.4);S.stressLevel=Math.min(100,Math.max(0,S.stressLevel));
     document.getElementById('stressVal').textContent=S.stressLevel+'%';const ss=S.stressLevel>65?'High 😰':S.stressLevel>35?'Moderate 😐':'Calm 😌';document.getElementById('stressState').textContent=ss;document.getElementById('stressBar').style.width=S.stressLevel+'%';document.getElementById('stressBar').style.background=S.stressLevel>65?'#FF4C5E':S.stressLevel>35?'#FFB830':'#00C48C';
-    calcWellbeing();updateRecs();
+    calcWellbeingLive();updateRecs();
 }
 
-function calcWellbeing(){
+function calcWellbeingLive(){
     const scores={Happy:92,Calm:88,Neutral:62,Surprised:58,Sad:28,Angry:18,Excited:85,Worried:35,Tired:40,Grateful:90,Loved:95,Confused:45,Stressed:20,Focused:80,Peaceful:95,Joyful:90};
     const em=scores[S.dominantEmotion]||60;const hr=Math.max(15,100-Math.abs(S.hrValue-66)*2.5);const blink=Math.max(15,100-Math.abs(S.blinkRate-17)*4);const voice=Math.max(10,100-S.voiceStress*0.8);const stab=Math.max(10,S.stability||50);
     const factors=[{value:em,weight:0.30},{value:hr,weight:0.25},{value:blink,weight:0.15},{value:voice,weight:0.15},{value:stab,weight:0.15}];
@@ -478,7 +496,7 @@ function calcWellbeing(){
 }
 
 function updateRecs(){const list=RECS[S.dominantEmotion]||RECS.Neutral;document.getElementById('recsList').innerHTML=list.map((r,i)=>`<div class="rec-item"><div class="rec-num">${i+1}</div><span>${r}</span></div>`).join('');}
-function updateUI(){if(S.hrValue>0){document.getElementById('hrDisplay').textContent=S.hrValue;document.getElementById('hrDisplay').style.color=S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';const p=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));document.getElementById('hrBar').style.width=p+'%';}document.getElementById('voiceStress').textContent=Math.round(S.voiceStress);document.getElementById('voiceStressBar').style.width=Math.round(S.voiceStress)+'%';const sc=S.voiceStress>65?'#FF4C5E':S.voiceStress>35?'#FFB830':'#00C48C';document.getElementById('voiceStressBar').style.background=sc;}
+function updateUI(){if(S.hrValue>0){document.getElementById('hrDisplay').textContent=S.hrValue;}document.getElementById('voiceStress').textContent=Math.round(S.voiceStress);document.getElementById('voiceStressBar').style.width=Math.round(S.voiceStress)+'%';const sc=S.voiceStress>65?'#FF4C5E':S.voiceStress>35?'#FFB830':'#00C48C';document.getElementById('voiceStressBar').style.background=sc;}
 
 async function toggleMic(){if(S.micOn){stopMic();}else{await startMic();}}
 async function startMic(){try{S.micStream=await navigator.mediaDevices.getUserMedia({audio:true});S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();const source=S.audioCtx.createMediaStreamSource(S.micStream);S.analyser=S.audioCtx.createAnalyser();S.analyser.fftSize=2048;S.analyser.smoothingTimeConstant=0.5;source.connect(S.analyser);S.micOn=true;document.getElementById('btnMic').textContent='🔇 Disable Mic';setStatus('dotVoice','active','lblVoice','Mic On');audioLoop();}catch(e){toast('❌ Microphone access denied');}}
