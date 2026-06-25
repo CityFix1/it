@@ -128,6 +128,12 @@
         .rppg-status{font-size:10px;color:var(--text-3);margin-top:2px}
         .rppg-bar{height:6px;background:var(--bg-base);border-radius:3px;overflow:hidden;margin-top:4px;width:100%}
         .rppg-bar .fill{height:100%;border-radius:3px;transition:width 0.5s;background:var(--cyan)}
+        .sync-status{font-size:9px;padding:2px 10px;border-radius:10px;display:inline-block;margin-left:8px}
+        .sync-status.cloud{background:rgba(0,196,140,0.15);color:var(--jade);border:1px solid var(--jade)}
+        .sync-status.local{background:rgba(255,184,48,0.15);color:var(--amber);border:1px solid var(--amber)}
+        .sync-status.offline{background:rgba(255,76,94,0.15);color:var(--coral);border:1px solid var(--coral)}
+        .bpm-flash{animation:bpmFlash 0.3s ease}
+        @keyframes bpmFlash{0%{transform:scale(1)}50%{transform:scale(1.15);color:var(--cyan)}100%{transform:scale(1)}}
     </style>
 </head>
 <body>
@@ -137,7 +143,7 @@
             <div class="logo-pulse">🧠</div>
             <div class="logo-text">
                 <h1>HEARTAUTH</h1>
-                <p>Live rPPG · Real-Time Biometrics</p>
+                <p>Live rPPG · Updates Every 0.5s</p>
             </div>
         </div>
         <div class="creator-badge">
@@ -150,6 +156,7 @@
         <label>👤 Your Name <span style="color:var(--coral);">*</span></label>
         <input type="text" id="userNameInput" placeholder="Enter your name" maxlength="30">
         <button class="btn" id="setNameBtn">Set Name</button>
+        <span class="sync-status local" id="syncStatus">📡 Local</span>
     </div>
 
     <div class="status-bar">
@@ -339,7 +346,7 @@
     </div>
 
     <div class="disclaimer-box">
-        <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes. Not a medical device. For accurate heart rate, use a medical-grade device.
+        <strong>⚠️ Disclaimer:</strong> This is a <strong>research-grade</strong> prototype for educational purposes. Not a medical device.
     </div>
 
     <footer class="footer">
@@ -351,8 +358,10 @@
 
 <script>
 // ============================================================
-// HEARTAUTH · ACCURATE LIVE rPPG FRONTEND
+// HEARTAUTH · LIVE rPPG - Updates Every 0.5 Seconds
 // ============================================================
+
+const API_URL = 'https://heartauth-backend.onrender.com';
 
 const S = {
     cameraOn: false, micOn: false, faceDetected: false, landmarks: null,
@@ -370,12 +379,13 @@ const S = {
     // rPPG specific
     rPPG_Signal: [],
     rPPG_Timestamps: [],
-    rPPG_Buffer: [],
     rPPG_Quality: 0,
     rPPG_LastHR: 72,
+    rPPG_HRHistory: [],
     tempCanvas: null,
     tempCtx: null,
-    lastHRTime: 0
+    lastHRUpdate: 0,
+    hrUpdateInterval: 500 // Update every 500ms
 };
 
 const EMOTION_EMOJI = {Happy:'😄',Sad:'😢',Angry:'😠',Surprised:'😲',Calm:'😌',Neutral:'😐',Excited:'🤩',Worried:'😰',Tired:'😴',Grateful:'🙏',Loved:'🥰',Confused:'🤔',Stressed:'😫',Focused:'🧘',Peaceful:'🕊️',Joyful:'🥳'};
@@ -420,23 +430,30 @@ function processrPPG(landmarks){
     });
     
     if(c>10){
-        // Average RGB
+        // Average RGB - use green channel as it's most sensitive to blood flow
         const rAvg=r/c,gAvg=g/c,bAvg=b/c;
-        // Combine channels - green is most sensitive to blood flow
-        const signal = (rAvg + gAvg + bAvg) / 3;
+        // Enhanced signal processing - weighted combination
+        const signal = (rAvg * 0.3 + gAvg * 0.5 + bAvg * 0.2);
         
         S.rPPG_Signal.push(signal);
         S.rPPG_Timestamps.push(Date.now());
         if(S.rPPG_Signal.length>200){S.rPPG_Signal.shift();S.rPPG_Timestamps.shift();}
         
-        // Calculate HR when enough samples
-        if(S.rPPG_Signal.length>50){
+        // Calculate HR when enough samples - update every 500ms
+        if(S.rPPG_Signal.length>60){
             const hr = calculateHR(S.rPPG_Signal);
             if(hr>40&&hr<120){
-                S.rPPG_LastHR = S.rPPG_LastHR * 0.7 + hr * 0.3;
+                S.rPPG_LastHR = S.rPPG_LastHR * 0.5 + hr * 0.5;
                 S.hrValue = Math.round(S.rPPG_LastHR);
                 S.rPPG_Quality = Math.min(100, Math.round(S.rPPG_Signal.length / 200 * 100));
-                updateHRDisplay();
+                
+                // Update HR display with flash animation
+                const now = Date.now();
+                if(now - S.lastHRUpdate > S.hrUpdateInterval){
+                    updateHRDisplay();
+                    S.lastHRUpdate = now;
+                }
+                
                 document.getElementById('rppgQuality').textContent = S.rPPG_Quality + '%';
                 document.getElementById('rppgBar').style.width = S.rPPG_Quality + '%';
                 document.getElementById('rppgStatus').textContent = '📡 HR: ' + S.hrValue + ' BPM · Quality: ' + S.rPPG_Quality + '%';
@@ -445,7 +462,7 @@ function processrPPG(landmarks){
                 document.getElementById('rppgStatus').textContent = '⏳ Computing heart rate...';
             }
         }else{
-            document.getElementById('rppgStatus').textContent = '⏳ Collecting signal... ' + S.rPPG_Signal.length + '/50';
+            document.getElementById('rppgStatus').textContent = '⏳ Collecting signal... ' + S.rPPG_Signal.length + '/60';
             document.getElementById('rppgQuality').textContent = Math.round(S.rPPG_Signal.length / 200 * 100) + '%';
             document.getElementById('rppgBar').style.width = (S.rPPG_Signal.length / 200 * 100) + '%';
         }
@@ -459,17 +476,17 @@ function calculateHR(signal){
     const detrended = detrendSignal(signal);
     // Find peaks
     const peaks = findPeaks(detrended);
-    if(peaks.length < 3) return 72;
+    if(peaks.length < 3) return S.rPPG_LastHR || 72;
     
     let intervals = [];
     for(let i=1;i<peaks.length;i++){
         intervals.push(peaks[i]-peaks[i-1]);
     }
-    if(intervals.length===0) return 72;
+    if(intervals.length===0) return S.rPPG_LastHR || 72;
     
     // Average interval in frames
     const avgInterval = intervals.reduce((a,b)=>a+b,0)/intervals.length;
-    // FPS estimation - assume ~30fps
+    // FPS estimation - ~30fps
     const fps = 30;
     const seconds = avgInterval / fps;
     const hr = 60 / seconds;
@@ -492,10 +509,10 @@ function detrendSignal(signal){
 
 function findPeaks(signal){
     const peaks=[];
-    const threshold=0.015;
-    for(let i=2;i<signal.length-2;i++){
-        if(signal[i]>signal[i-1]&&signal[i]>signal[i-2]&&
-           signal[i]>signal[i+1]&&signal[i]>signal[i+2]&&
+    const threshold=0.02;
+    for(let i=3;i<signal.length-3;i++){
+        if(signal[i]>signal[i-1]&&signal[i]>signal[i-2]&&signal[i]>signal[i-3]&&
+           signal[i]>signal[i+1]&&signal[i]>signal[i+2]&&signal[i]>signal[i+3]&&
            signal[i]>threshold){
             peaks.push(i);
         }
@@ -504,11 +521,20 @@ function findPeaks(signal){
 }
 
 function updateHRDisplay(){
-    document.getElementById('hrDisplay').textContent = S.hrValue;
-    document.getElementById('hrDisplay').style.color = S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';
+    const el = document.getElementById('hrDisplay');
+    el.textContent = S.hrValue;
+    el.style.color = S.hrValue>85?'#FF4C5E':S.hrValue>70?'#FFB830':'#00C48C';
+    // Flash animation
+    el.classList.remove('bpm-flash');
+    void el.offsetWidth;
+    el.classList.add('bpm-flash');
+    
     const pct=Math.max(0,Math.min(100,(S.hrValue-40)/80*100));
     document.getElementById('hrBar').style.width = pct + '%';
     document.getElementById('hrStatus').textContent = '❤️ ' + S.hrValue + ' BPM · ' + S.rPPG_Quality + '% quality';
+    // Update pulse ring speed based on HR
+    const pulseSpeed = 60 / S.hrValue;
+    document.getElementById('pulseRing').style.animationDuration = pulseSpeed + 's';
 }
 
 // ─── MEDIAPIPE ──────────────────────────────────────────
@@ -620,6 +646,14 @@ function analyzeAndSend(){
     readings.unshift(data);if(readings.length>100)readings.length=100;
     localStorage.setItem('heartauth_readings',JSON.stringify(readings));
     localStorage.setItem('heartauth_latest',JSON.stringify(data));
+    
+    // Send to cloud
+    fetch(API_URL + '/api/readings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).catch(() => {});
+    
     renderHistory();updateChart(history);
     toast('✅ Recorded! '+S.userName+' - '+emotion+' ('+score+') · HR: '+S.hrValue+' BPM');
 }
